@@ -2,6 +2,9 @@
 #include "disarm64.h"
 #include <stdint.h>
 
+// Disarm — Fast AArch64 Decode/Encoder
+// SPDX-License-Identifier: BSD-3-Clause
+
 uint32_t da_immadd(int64_t value) {
   uint32_t inst = 0;
   uint64_t uval = value;

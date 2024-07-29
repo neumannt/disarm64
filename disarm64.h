@@ -1,6 +1,8 @@
-
 #ifndef DA_DISARM64_H_
 #define DA_DISARM64_H_
+
+// Disarm — Fast AArch64 Decode/Encoder
+// SPDX-License-Identifier: BSD-3-Clause
 
 #include <stdbool.h>
 #include <stddef.h>

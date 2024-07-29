@@ -1,5 +1,8 @@
 #!/usr/bin/python3
 
+# Disarm — Fast AArch64 Decode/Encoder
+# SPDX-License-Identifier: BSD-3-Clause
+
 import argparse
 import bisect
 from collections import Counter, defaultdict

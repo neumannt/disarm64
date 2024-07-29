@@ -2,6 +2,9 @@
 #include "disarm64.h"
 #include <stdint.h>
 
+// Disarm — Fast AArch64 Decode/Encoder
+// SPDX-License-Identifier: BSD-3-Clause
+
 static int64_t sext(uint64_t imm, unsigned bits) {
   uint64_t sign = 1 << (bits - 1);
   return imm & sign ? (imm ^ sign) - sign : imm;
