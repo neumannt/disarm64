@@ -4,9 +4,9 @@
 // Disarm — Fast AArch64 Decode/Encoder
 // SPDX-License-Identifier: BSD-3-Clause
 
-#include <stdbool.h>
-#include <stddef.h>
-#include <stdint.h>
+#include <cstdbool>
+#include <cstddef>
+#include <cstdint>
 
 #ifdef __cplusplus
 extern "C" {

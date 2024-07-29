@@ -1,29 +1,29 @@
 
-#include <disarm64.h>
-#include <stdint.h>
+#include <disarm64.hpp>
+#include <cstdint>
 
 // Disarm — Fast AArch64 Decode/Encoder
 // SPDX-License-Identifier: BSD-3-Clause
 
-static char* da_strpcat4(char* restrict dst, const char* str, unsigned len) {
+static char* da_strpcat4(char* __restrict dst, const char* str, unsigned len) {
   for (unsigned i = 0; i < 4; i++)
     dst[i] = str[i];
   return dst + len;
 }
-static char* da_strpcat8(char* restrict dst, const char* str, unsigned len) {
+static char* da_strpcat8(char* __restrict dst, const char* str, unsigned len) {
   for (unsigned i = 0; i < 8; i++)
     dst[i] = str[i];
   return dst + len;
 }
-static char* da_strpcat12(char* restrict dst, const char* str, unsigned len) {
+static char* da_strpcat12(char* __restrict dst, const char* str, unsigned len) {
   for (unsigned i = 0; i < 12; i++)
     dst[i] = str[i];
   return dst + len;
 }
 
-static char* da_strpcatimmdecstr(char* restrict dst, unsigned imm,
+static char* da_strpcatimmdecstr(char* __restrict dst, unsigned imm,
                                  unsigned skip) {
-  static const char* tbl =
+  static const char tbl[] =
       " #0\0  #1\0  #2\0  #3\0  #4\0  #5\0  #6\0  #7\0 "
       " #8\0  #9\0  #10\0 #11\0 #12\0 #13\0 #14\0 #15\0"
       " #16\0 #17\0 #18\0 #19\0 #20\0 #21\0 #22\0 #23\0"
@@ -35,7 +35,7 @@ static char* da_strpcatimmdecstr(char* restrict dst, unsigned imm,
   return da_strpcat4(dst, tbl + 5 * imm + skip, 3 - skip + (imm >= 10));
 }
 
-static char* da_strpcatuimmhex(char* restrict dst, uint64_t imm) {
+static char* da_strpcatuimmhex(char* __restrict dst, uint64_t imm) {
   unsigned numbytes = 16 - (__builtin_clzll(imm | 1) / 4);
   unsigned idx = numbytes;
   do {
@@ -45,7 +45,7 @@ static char* da_strpcatuimmhex(char* restrict dst, uint64_t imm) {
   return dst + numbytes;
 }
 
-static char* da_strpcatsimmhex16(char* restrict dst, int16_t imm,
+static char* da_strpcatsimmhex16(char* __restrict dst, int16_t imm,
                                  unsigned skip) {
   uint64_t uimm = imm < 0 ? -(uint64_t)imm : (uint64_t)imm;
   if (imm < 0)
@@ -55,7 +55,7 @@ static char* da_strpcatsimmhex16(char* restrict dst, int16_t imm,
   return da_strpcatuimmhex(dst, uimm);
 }
 
-static char* da_strpcatreggp(char* restrict dst, unsigned sf, unsigned idx) {
+static char* da_strpcatreggp(char* __restrict dst, unsigned sf, unsigned idx) {
   const char* wstr = "w0\0 w1\0 w2\0 w3\0 w4\0 w5\0 w6\0 w7\0 "
                      "w8\0 w9\0 w10\0w11\0w12\0w13\0w14\0w15\0"
                      "w16\0w17\0w18\0w19\0w20\0w21\0w22\0w23\0"
@@ -67,7 +67,7 @@ static char* da_strpcatreggp(char* restrict dst, unsigned sf, unsigned idx) {
   return da_strpcat4(dst, (sf ? xstr : wstr) + idx * 4, idx >= 10 ? 3 : 2);
 }
 
-static char* da_strpcatreggpsp(char* restrict dst, unsigned sf, unsigned idx) {
+static char* da_strpcatreggpsp(char* __restrict dst, unsigned sf, unsigned idx) {
   const char* wstr = "w0\0 w1\0 w2\0 w3\0 w4\0 w5\0 w6\0 w7\0 "
                      "w8\0 w9\0 w10\0w11\0w12\0w13\0w14\0w15\0"
                      "w16\0w17\0w18\0w19\0w20\0w21\0w22\0w23\0"
@@ -80,7 +80,7 @@ static char* da_strpcatreggpsp(char* restrict dst, unsigned sf, unsigned idx) {
   return da_strpcat4(dst, (sf ? xstr : wstr) + idx * 4, len);
 }
 
-static char* da_strpcatregv(char* restrict dst, unsigned idx) {
+static char* da_strpcatregv(char* __restrict dst, unsigned idx) {
   const char* vstr = "v0\0 v1\0 v2\0 v3\0 v4\0 v5\0 v6\0 v7\0 "
                      "v8\0 v9\0 v10\0v11\0v12\0v13\0v14\0v15\0"
                      "v16\0v17\0v18\0v19\0v20\0v21\0v22\0v23\0"
@@ -99,17 +99,27 @@ void da64_format(const struct Da64Inst* ddi, char* buf128) {
 #include "disarm64-private.inc"
 #undef DA64_DECSTR
       ;
-  static const uint16_t mnemtab[] = {
+  struct mnemtabentry { uint16_t key, value; };
+  static constexpr mnemtabentry mnemtab[] = {
 #define DA64_DECSTRTAB
 #include "disarm64-private.inc"
 #undef DA64_DECSTRTAB
   };
+  static constexpr unsigned mnemtabSize = sizeof(mnemtab) / sizeof(mnemtab[0]);
   const char* va = ".8b .16b.4h .8h .2s .4s .1d .2d .2h .1q";
 
   char* end = buf128;
-  if (ddi->mnem < sizeof(mnemtab) / sizeof(mnemtab[0]))
-    end = da_strpcat12(end, mnemstr + (mnemtab[ddi->mnem] & 0xfff),
-                       mnemtab[ddi->mnem] >> 12);
+  if (ddi->mnem <= mnemtab[mnemtabSize-1].key) {
+    uint64_t key = ddi->mnem;
+    unsigned l=0,u=mnemtabSize;
+    while (u-l>1) {
+      unsigned m=l+((u-l)/2);
+      if (mnemtab[m].key>key) u=m; else l=m;
+    }
+    if ((l<mnemtabSize)&&(mnemtab[l].key==key))
+    end = da_strpcat12(end, mnemstr + (mnemtab[l].value & 0xfff),
+                       mnemtab[l].value >> 12);
+  }
   for (unsigned i = 0; i < sizeof(ddi->ops) / sizeof(ddi->ops[0]); i++) {
     if (ddi->ops[i].type == DA_OP_NONE)
       break;

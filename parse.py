@@ -395,7 +395,7 @@ class DecoderGenerator:
         mnems_strs = [f"DA64I_{k}={v:#x},\n" for k, v in self.mnems.items()]
         grpnum_strs = [f"DA64G_{k}={v:#x},\n" for k, v in self.grpnums.items()]
         decodestr = superstring(self.decstr.values())
-        decstrtab = [f'[{m}] = {len(s) << 12 | decodestr.index(s):#x},\n'
+        decstrtab = [f'{{{m}, {len(s) << 12 | decodestr.index(s):#x}}},\n'
             for m, s in self.decstr.items()]
         decoder = [f'case DA64G_{m}: {s}\n' for m, s in self.decoders.items()]
         public = f"""

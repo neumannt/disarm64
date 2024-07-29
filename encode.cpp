@@ -1,6 +1,6 @@
 
-#include "disarm64.h"
-#include <stdint.h>
+#include "disarm64.hpp"
+#include <cstdint>
 
 // Disarm — Fast AArch64 Decode/Encoder
 // SPDX-License-Identifier: BSD-3-Clause
@@ -24,7 +24,7 @@ uint32_t da_immlogical(uint64_t value, unsigned is64) {
     value = value | (value << 32);
 
   if (value == 0 || ~value == 0)
-    goto fail;
+    return 0xffffffff;
 
   int clz = __builtin_clzll(value);
   int iclz = __builtin_clzll(~value);
@@ -47,12 +47,11 @@ uint32_t da_immlogical(uint64_t value, unsigned is64) {
     imms >>= 1;
     uint64_t mask = (1ull << shift) - 1;
     if ((value & mask) != (value >> shift & mask))
-      goto fail;
+      return 0xffffffff;
   }
 
   __builtin_unreachable();
 
-fail:
   return 0xffffffff;
 }
 
