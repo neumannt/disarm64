@@ -1,8 +1,10 @@
 
-#include <disarm64.h>
+#include "../disarm64.hpp"
 #include <string.h>
 #include <stdint.h>
 #include <stdio.h>
+
+using namespace disarm64;
 
 int main(void) {
   const struct {

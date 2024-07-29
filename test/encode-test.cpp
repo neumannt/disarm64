@@ -1,11 +1,12 @@
-
-#include <disarm64.h>
+#include "../disarm64.hpp"
 #include <inttypes.h>
 #include <math.h>
 #include <string.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
+
+using namespace disarm64;
 
 static unsigned test_MOVconst(void) {
   unsigned num = 0;

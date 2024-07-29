@@ -9,3 +9,16 @@ add_custom_command(
 
 add_library(disarm OBJECT classify.cpp encode.cpp decode.cpp format.cpp ${CMAKE_CURRENT_BINARY_DIR}/disarm64-public.inc ${CMAKE_CURRENT_BINARY_DIR}/disarm64-private.inc)
 target_include_directories(disarm PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+
+add_executable(decode-test test/decode-test.cpp)
+target_include_directories(decode-test PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+target_link_libraries(decode-test disarm)
+
+add_executable(encode-test test/encode-test.cpp)
+target_include_directories(encode-test PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+target_link_libraries(encode-test disarm)
+
+#add_executable(test test.cpp)
+#target_include_directories(test PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+#target_link_libraries(test disarm)
+
