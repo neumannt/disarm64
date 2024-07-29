@@ -5,6 +5,8 @@
 // Disarm — Fast AArch64 Decode/Encoder
 // SPDX-License-Identifier: BSD-3-Clause
 
+namespace disarm64 {
+
 static int64_t sext(uint64_t imm, unsigned bits) {
   uint64_t sign = 1 << (bits - 1);
   return imm & sign ? (imm ^ sign) - sign : imm;
@@ -179,4 +181,6 @@ void da64_decode(uint32_t inst, struct Da64Inst* ddi) {
 #include "disarm64-private.inc"
 #undef DA64_DECODER
   }
+}
+
 }

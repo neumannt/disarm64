@@ -9,6 +9,10 @@
 #include "disarm64-private.inc"
 #undef DA64_CLASSIFIER
 
+namespace disarm64 {
+
 enum Da64InstKind da64_classify(uint32_t inst) {
   return Da64InstKind(da64_classify_impl(inst));
+}
+
 }

@@ -5,6 +5,8 @@
 // Disarm — Fast AArch64 Decode/Encoder
 // SPDX-License-Identifier: BSD-3-Clause
 
+namespace disarm64 {
+
 static char* da_strpcat4(char* __restrict dst, const char* str, unsigned len) {
   for (unsigned i = 0; i < 4; i++)
     dst[i] = str[i];
@@ -393,4 +395,6 @@ void da64_format(const struct Da64Inst* ddi, char* buf128) {
     }
   }
   *end = 0;
+}
+
 }

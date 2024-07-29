@@ -8,9 +8,7 @@
 #include <cstddef>
 #include <cstdint>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+namespace disarm64 {
 
 enum Da64Cond {
   /// Equals, zero set (Z=1)
@@ -78,74 +76,34 @@ typedef enum Da64PrfOp Da64PrfOp;
 
 // Encoding API
 
-// #define DA_NOSTRUCT
-#ifdef DA_NOSTRUCT
-typedef uint8_t DA_GReg;
-typedef uint8_t DA_GRegZR;
-typedef uint8_t DA_GRegSP;
-typedef uint8_t DA_VReg;
-
-#define DA_GP(num) ((num) & 31)
-#define DA_ZR 31
-#define DA_SP 31
-#define DA_V(num) ((num) & 31)
-
-#define DA_GPSP(r) (r)
-#define DA_GPZR(r) (r)
-#define DA_REGVAL(r) (r)
-#else // !DA_NOSTRUCT
-#if !defined(__cplusplus)
-typedef struct DA_GReg {
-  uint8_t val;
-} DA_GReg;
-typedef struct DA_GRegZR {
-  uint8_t val;
-} DA_GRegZR;
-typedef struct DA_GRegSP {
-  uint8_t val;
-} DA_GRegSP;
-typedef struct DA_VReg {
-  uint8_t val;
-} DA_VReg;
-
-#define DA_GP(num) ((DA_GReg){(num) & 31})
-#define DA_ZR ((DA_GRegZR){31})
-#define DA_SP ((DA_GRegSP){31})
-#define DA_V(num) ((DA_VReg){(num) & 31})
-
-#define DA_GPSP(r)                                                             \
-  ((DA_GRegSP){_Generic((r), DA_GRegSP: (r), DA_GReg: (r)).val})
-#define DA_GPZR(r)                                                             \
-  ((DA_GRegZR){_Generic((r), DA_GRegZR: (r), DA_GReg: (r)).val})
-#define DA_REGVAL(r) ((r).val)
-#else // defined(__cplusplus)
 struct DA_GReg {
   uint8_t val;
 };
 struct DA_GRegZR {
   uint8_t val;
-  explicit DA_GRegZR(uint8_t v) : val(v) {}
-  DA_GRegZR(DA_GReg r) : val(r.val) {}
+  constexpr explicit DA_GRegZR(uint8_t v) : val(v) {}
+  constexpr DA_GRegZR(DA_GReg r) : val(r.val) {}
 };
 struct DA_GRegSP {
   uint8_t val;
-  explicit DA_GRegSP(uint8_t v) : val(v) {}
-  DA_GRegSP(DA_GReg r) : val(r.val) {}
+  constexpr explicit DA_GRegSP(uint8_t v) : val(v) {}
+  constexpr DA_GRegSP(DA_GReg r) : val(r.val) {}
 };
 struct DA_VReg {
   uint8_t val;
 };
 
-#define DA_GP(num) (DA_GReg{(num) & 31})
-#define DA_ZR (DA_GRegZR{31})
-#define DA_SP (DA_GRegSP{31})
-#define DA_V(num) (DA_VReg{(num) & 31})
+static inline constexpr DA_GReg DA_GP(uint8_t num) { return DA_GReg{uint8_t(num&31)}; }
+static constexpr DA_GRegZR DA_ZR = DA_GRegZR{31};
+static constexpr DA_GRegSP DA_SP = DA_GRegSP{31};
+static constexpr DA_VReg DA_V(uint8_t num) { return DA_VReg{uint8_t(num&31)}; }
 
-#define DA_GPSP(r) (r)
-#define DA_GPZR(r) (r)
-#define DA_REGVAL(r) ((r).val)
-#endif // !defined(__cplusplus)
-#endif // DA_NOSTRUCT
+static inline constexpr DA_GRegSP DA_GPSP(DA_GRegSP r) { return r; }
+static inline constexpr DA_GRegZR DA_GPZR(DA_GRegZR r) { return r; }
+static inline constexpr uint8_t DA_REGVAL(DA_GReg r) { return r.val; }
+static inline constexpr uint8_t DA_REGVAL(DA_GRegZR r) { return r.val; }
+static inline constexpr uint8_t DA_REGVAL(DA_GRegSP r) { return r.val; }
+static inline constexpr uint8_t DA_REGVAL(DA_VReg r) { return r.val; }
 
 // Do not use. Sign extend lowest bits of imm.
 static inline int64_t da_sext(int64_t imm, unsigned bits) {
@@ -323,8 +281,6 @@ enum Da64InstKind da64_classify(uint32_t inst);
 void da64_decode(uint32_t inst, struct Da64Inst* ddi);
 void da64_format(const struct Da64Inst* ddi, char* buf128);
 
-#ifdef __cplusplus
 }
-#endif
 
 #endif // DA_DISARM64_H_

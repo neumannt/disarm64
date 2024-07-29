@@ -5,6 +5,8 @@
 // Disarm — Fast AArch64 Decode/Encoder
 // SPDX-License-Identifier: BSD-3-Clause
 
+namespace disarm64 {
+
 uint32_t da_immadd(int64_t value) {
   uint32_t inst = 0;
   uint64_t uval = value;
@@ -170,4 +172,6 @@ unsigned de64_MOVconst(uint32_t* buf, DA_GReg reg, uint64_t cnst) {
       buf[cnt++] = de64_MOVKx_shift(reg, cnst >> 16 * i & 0xffff, i);
   }
   return cnt;
+}
+
 }
