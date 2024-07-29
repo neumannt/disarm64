@@ -564,12 +564,12 @@ class EncoderGenerator:
 
         substs = {"DA_GRegSP": "DA_GPSP", "DA_GRegZR": "DA_GPZR"}
         if any(ty in substs for ty in paramtys):
-            implname = f"de64_impl_{name}"
+            implname = f"impl_{name}"
             macroparams = ",".join(parnames)
             macroargs = ",".join(f"{substs.get(ty, '')}({parname})" for ty, parname in zip(paramtys, parnames))
-            self.decls.append(f"#define de64_{name}({macroparams}) {implname}({macroargs})")
+            self.decls.append(f"#define {name}({macroparams}) {implname}({macroargs})")
         else:
-            implname = f"de64_{name}"
+            implname = f"{name}"
         paramstr = ", ".join(f"{ty} {parname}" for ty, parname in zip(paramtys, parnames))
         if not paramstr:
             paramstr = "void"

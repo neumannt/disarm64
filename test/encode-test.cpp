@@ -49,7 +49,7 @@ static unsigned test_MOVconst(void) {
     unsigned exp_cnt = !exp[1] ? 1 : !exp[2] ? 2 : !exp[3] ? 3 : 4;
 
     uint32_t buf[4] = {0};
-    unsigned cnt = de64_MOVconst(buf, DA_GP(0), cases[i].cnst);
+    unsigned cnt = MOVconst(buf, DA_GP(0), cases[i].cnst);
     bool ok = cnt == exp_cnt && !memcmp(buf, exp, sizeof(buf));
     num++;
     printf("%sok %u MOVconst %d{%x,%x,%x,%x} %d{%x,%x,%x,%x} %016" PRIx64 "\n",
@@ -92,44 +92,44 @@ int main(void) {
 #include "encode-test-sys.inc"
 
   // Unsorted tests
-  TEST(0x9b020c20, de64_MADDx(DA_GP(0), DA_GP(1), DA_GP(2), DA_GP(3)));
-  TEST(0x9b027c20, de64_MADDx(DA_GP(0), DA_GP(1), DA_GP(2), DA_ZR));
-  TEST(0x9b027c20, de64_MULx(DA_GP(0), DA_GP(1), DA_GP(2)));
-  TEST(0x9b028c20, de64_MSUBx(DA_GP(0), DA_GP(1), DA_GP(2), DA_GP(3)));
-  TEST(0x9b02fc20, de64_MSUBx(DA_GP(0), DA_GP(1), DA_GP(2), DA_ZR));
-  TEST(0x9b02fc20, de64_MNEGx(DA_GP(0), DA_GP(1), DA_GP(2)));
-  TEST(0xfa41300f, de64_CCMPx(DA_GP(0), DA_GP(1), 0xf, DA_LO));
-  TEST(0, de64_CCMPx(DA_GP(0), DA_GP(1), 0x10, DA_LO));
-  TEST(0, de64_CCMPx(DA_GP(0), DA_GP(1), -1, DA_LO));
-  TEST(0x9a823020, de64_CSELx(DA_GP(0), DA_GP(1), DA_GP(2), DA_CC));
-  TEST(0x9a823420, de64_CSINCx(DA_GP(0), DA_GP(1), DA_GP(2), DA_CC));
-  TEST(0xda823020, de64_CSINVx(DA_GP(0), DA_GP(1), DA_GP(2), DA_CC));
-  TEST(0xda823420, de64_CSNEGx(DA_GP(0), DA_GP(1), DA_GP(2), DA_CC));
-  TEST(0x9a813020, de64_CSELx(DA_GP(0), DA_GP(1), DA_GP(1), DA_CC));
-  TEST(0x9a813420, de64_CSINCx(DA_GP(0), DA_GP(1), DA_GP(1), DA_CC));
-  TEST(0x9a813420, de64_CINCx(DA_GP(0), DA_GP(1), DA_CS));
-  TEST(0xda813020, de64_CSINVx(DA_GP(0), DA_GP(1), DA_GP(1), DA_CC));
-  TEST(0xda813020, de64_CINVx(DA_GP(0), DA_GP(1), DA_CS));
-  TEST(0xda813420, de64_CSNEGx(DA_GP(0), DA_GP(1), DA_GP(1), DA_CC));
-  TEST(0xda813420, de64_CNEGx(DA_GP(0), DA_GP(1), DA_CS));
-  TEST(0x9a9f33e0, de64_CSELx(DA_GP(0), DA_ZR, DA_ZR, DA_CC));
-  TEST(0x9a9f37e0, de64_CSINCx(DA_GP(0), DA_ZR, DA_ZR, DA_CC));
-  TEST(0x9a9f37e0, de64_CSETx(DA_GP(0), DA_CS));
-  TEST(0xda9f33e0, de64_CSINVx(DA_GP(0), DA_ZR, DA_ZR, DA_CC));
-  TEST(0xda9f33e0, de64_CSETMx(DA_GP(0), DA_CS));
-  TEST(0xda9f37e0, de64_CSNEGx(DA_GP(0), DA_ZR, DA_ZR, DA_CC));
-  TEST(0xda9f37e0, de64_CNEGx(DA_GP(0), DA_ZR, DA_CS));
+  TEST(0x9b020c20, MADDx(DA_GP(0), DA_GP(1), DA_GP(2), DA_GP(3)));
+  TEST(0x9b027c20, MADDx(DA_GP(0), DA_GP(1), DA_GP(2), DA_ZR));
+  TEST(0x9b027c20, MULx(DA_GP(0), DA_GP(1), DA_GP(2)));
+  TEST(0x9b028c20, MSUBx(DA_GP(0), DA_GP(1), DA_GP(2), DA_GP(3)));
+  TEST(0x9b02fc20, MSUBx(DA_GP(0), DA_GP(1), DA_GP(2), DA_ZR));
+  TEST(0x9b02fc20, MNEGx(DA_GP(0), DA_GP(1), DA_GP(2)));
+  TEST(0xfa41300f, CCMPx(DA_GP(0), DA_GP(1), 0xf, DA_LO));
+  TEST(0, CCMPx(DA_GP(0), DA_GP(1), 0x10, DA_LO));
+  TEST(0, CCMPx(DA_GP(0), DA_GP(1), -1, DA_LO));
+  TEST(0x9a823020, CSELx(DA_GP(0), DA_GP(1), DA_GP(2), DA_CC));
+  TEST(0x9a823420, CSINCx(DA_GP(0), DA_GP(1), DA_GP(2), DA_CC));
+  TEST(0xda823020, CSINVx(DA_GP(0), DA_GP(1), DA_GP(2), DA_CC));
+  TEST(0xda823420, CSNEGx(DA_GP(0), DA_GP(1), DA_GP(2), DA_CC));
+  TEST(0x9a813020, CSELx(DA_GP(0), DA_GP(1), DA_GP(1), DA_CC));
+  TEST(0x9a813420, CSINCx(DA_GP(0), DA_GP(1), DA_GP(1), DA_CC));
+  TEST(0x9a813420, CINCx(DA_GP(0), DA_GP(1), DA_CS));
+  TEST(0xda813020, CSINVx(DA_GP(0), DA_GP(1), DA_GP(1), DA_CC));
+  TEST(0xda813020, CINVx(DA_GP(0), DA_GP(1), DA_CS));
+  TEST(0xda813420, CSNEGx(DA_GP(0), DA_GP(1), DA_GP(1), DA_CC));
+  TEST(0xda813420, CNEGx(DA_GP(0), DA_GP(1), DA_CS));
+  TEST(0x9a9f33e0, CSELx(DA_GP(0), DA_ZR, DA_ZR, DA_CC));
+  TEST(0x9a9f37e0, CSINCx(DA_GP(0), DA_ZR, DA_ZR, DA_CC));
+  TEST(0x9a9f37e0, CSETx(DA_GP(0), DA_CS));
+  TEST(0xda9f33e0, CSINVx(DA_GP(0), DA_ZR, DA_ZR, DA_CC));
+  TEST(0xda9f33e0, CSETMx(DA_GP(0), DA_CS));
+  TEST(0xda9f37e0, CSNEGx(DA_GP(0), DA_ZR, DA_ZR, DA_CC));
+  TEST(0xda9f37e0, CNEGx(DA_GP(0), DA_ZR, DA_CS));
 
   // SIMD logical
-  TEST(0x0ea11c20, de64_MOV8b(DA_V(0), DA_V(1)));
-  TEST(0x4ea11c20, de64_MOV16b(DA_V(0), DA_V(1)));
+  TEST(0x0ea11c20, MOV8b(DA_V(0), DA_V(1)));
+  TEST(0x4ea11c20, MOV16b(DA_V(0), DA_V(1)));
 
-  TEST(0x0f08a420, de64_SXTL_8h(DA_V(0), DA_V(1)));
-  TEST(0x0f10a420, de64_SXTL_4s(DA_V(0), DA_V(1)));
-  TEST(0x0f20a420, de64_SXTL_2d(DA_V(0), DA_V(1)));
-  TEST(0x4f08a420, de64_SXTL2_8h(DA_V(0), DA_V(1)));
-  TEST(0x4f10a420, de64_SXTL2_4s(DA_V(0), DA_V(1)));
-  TEST(0x4f20a420, de64_SXTL2_2d(DA_V(0), DA_V(1)));
+  TEST(0x0f08a420, SXTL_8h(DA_V(0), DA_V(1)));
+  TEST(0x0f10a420, SXTL_4s(DA_V(0), DA_V(1)));
+  TEST(0x0f20a420, SXTL_2d(DA_V(0), DA_V(1)));
+  TEST(0x4f08a420, SXTL2_8h(DA_V(0), DA_V(1)));
+  TEST(0x4f10a420, SXTL2_4s(DA_V(0), DA_V(1)));
+  TEST(0x4f20a420, SXTL2_2d(DA_V(0), DA_V(1)));
 
   printf("1..%u\n", num);
   return 0;

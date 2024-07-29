@@ -128,7 +128,7 @@ uint32_t __attribute__((const)) da_immsimdmovi(uint64_t value);
 
 /// Materialize cnst into reg; may write up to four instructions. Returns the
 /// number of instructions written.
-unsigned de64_MOVconst(uint32_t* buf, DA_GReg reg, uint64_t cnst);
+unsigned MOVconst(uint32_t* buf, DA_GReg reg, uint64_t cnst);
 
 // Decoding API
 

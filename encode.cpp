@@ -138,12 +138,12 @@ fail:
 #include "disarm64-private.inc"
 #undef DA64_ENCODER
 
-unsigned de64_MOVconst(uint32_t* buf, DA_GReg reg, uint64_t cnst) {
+unsigned MOVconst(uint32_t* buf, DA_GReg reg, uint64_t cnst) {
   if (cnst < 0x10000) {
-    buf[0] = de64_MOVZx(reg, (uint16_t)cnst);
+    buf[0] = MOVZx(reg, (uint16_t)cnst);
     return 1;
   } else if (cnst >= 0xffffffffffff0000) {
-    buf[0] = de64_MOVNx(reg, (uint16_t)~cnst);
+    buf[0] = MOVNx(reg, (uint16_t)~cnst);
     return 1;
   }
   int clz = __builtin_clzll(cnst) >> 4;
@@ -151,25 +151,25 @@ unsigned de64_MOVconst(uint32_t* buf, DA_GReg reg, uint64_t cnst) {
   int ctz = __builtin_ctzll(cnst) >> 4;
   int ictz = __builtin_ctzll(~cnst) >> 4;
   if (clz + ctz == 3) { // Simple MOVZ shifted by ctz
-    buf[0] = de64_MOVZx_shift(reg, cnst >> (ctz * 16), ctz);
+    buf[0] = MOVZx_shift(reg, cnst >> (ctz * 16), ctz);
     return 1;
   } else if (iclz + ictz == 3) { // Simple MOVN shifted by ictz
-    buf[0] = de64_MOVNx_shift(reg, ~cnst >> (ictz * 16), ictz);
+    buf[0] = MOVNx_shift(reg, ~cnst >> (ictz * 16), ictz);
     return 1;
-  } else if ((buf[0] = de64_ORRxi(reg, DA_ZR, cnst))) {
+  } else if ((buf[0] = ORRxi(reg, DA_ZR, cnst))) {
     return 1;
   } else if (clz == 2 && (__builtin_clz(~cnst) >> 4) + ictz >= 1) { // MOVNw
-    buf[0] = de64_MOVNw_shift(reg, (uint32_t)~cnst >> (ictz * 16), ictz);
+    buf[0] = MOVNw_shift(reg, (uint32_t)~cnst >> (ictz * 16), ictz);
     return 1;
   }
 
   // XXX: maybe add two-instruction sequences, e.g. to ORRs or MOVZ+ORR?
   // XXX: try inversion to reduce number of instructions
-  buf[0] = de64_MOVZx_shift(reg, cnst >> (16 * ctz) & 0xffff, ctz);
+  buf[0] = MOVZx_shift(reg, cnst >> (16 * ctz) & 0xffff, ctz);
   unsigned cnt = 1;
   for (unsigned i = ctz + 1; i < 4; i++) {
     if (cnst >> 16 * i & 0xffff)
-      buf[cnt++] = de64_MOVKx_shift(reg, cnst >> 16 * i & 0xffff, i);
+      buf[cnt++] = MOVKx_shift(reg, cnst >> 16 * i & 0xffff, i);
   }
   return cnt;
 }
