@@ -311,6 +311,36 @@ void Assembler::addBranch(JumpEncoder encoder, Label target)
     flushJumpThunks(false);
 }
 
+void Assembler::emitJumpTable(Label start, std::span<Label> table)
+// Create a jump table
+{
+  // Make sure we have safely dump the table
+  flushJumpThunks(false, table.size());
+
+  // Place the start
+  placeLabel(start);
+  auto tableStart = code.size();
+  int32_t shift = 0;
+  for (auto target : table) {
+    auto targetId = target.getId();
+    if (labels[targetId] & 1) {
+      int32_t delta = getJumpDelta(tableStart, labels[targetId] >> 1);
+      code.push_back(delta);
+    } else {
+      addUndefinedLabel([shift](int32_t delta) { return delta - shift; },
+                        code.size(), target, MaximumDistance::J128MB);
+      code.push_back(0);
+    }
+    if (writer) [[unlikely]] {
+      char buffer[128];
+      snprintf(buffer, sizeof(buffer), ".word (.L%u-.L%u)>>2\n",
+               unsigned(targetId), unsigned(start.getId()));
+      writer->writeRaw(buffer, strlen(buffer));
+    }
+    ++shift;
+  }
+}
+
 void Assembler::recomputeDeadlines()
 // Recompute deadlines after a queue head has changed
 {
@@ -331,7 +361,8 @@ void Assembler::recomputeDeadlines()
   combineDeadlines();
 }
 
-void Assembler::flushJumpThunks(bool afterUnconditionalBranch)
+void Assembler::flushJumpThunks(bool afterUnconditionalBranch,
+                                size_t pendingBlockSize)
 // Flush jump thunks
 {
   // We add 1KB extra buffer in front of the deadline to avoid repeated jump
@@ -339,7 +370,8 @@ void Assembler::flushJumpThunks(bool afterUnconditionalBranch)
   static constexpr size_t gracePeriod = (1 << 10) / 4;
 
   // Do we have anything to do?
-  if (outOfReachList.empty() && (code.size() + gracePeriod < flushDeadline))
+  if (outOfReachList.empty() &&
+      (code.size() + gracePeriod + pendingBlockSize < flushDeadline))
     return;
 
   // Add an unconditional branch to jump over the thunks (unless we have one in
@@ -400,7 +432,7 @@ void Assembler::flushJumpThunks(bool afterUnconditionalBranch)
     // Check if we can wait with emitting that branch
     auto bid = pendingLabelQueue[nextInQueue].first;
     auto& b = pendingLabels[bid - 1];
-    if (b.getDeadline() > code.size() + gracePeriod)
+    if (b.getDeadline() > code.size() + gracePeriod + pendingBlockSize)
       break;
 
     // We have a problem when we run out of range for conditional branches. We

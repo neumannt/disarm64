@@ -6,6 +6,7 @@
 
 #include <cstdint>
 #include <functional>
+#include <span>
 #include <vector>
 
 namespace disarm64 {
@@ -135,7 +136,8 @@ private:
   /// Recompute deadlines after a queue head has changed
   void recomputeDeadlines();
   /// Flush jump thunks
-  void flushJumpThunks(bool afterUnconditionalBranch);
+  void flushJumpThunks(bool afterUnconditionalBranch,
+                       size_t pendingBlockSize = 0);
   /// Add an undefined label
   void addUndefinedLabel(JumpEncoder encoder, unsigned jumpPos, Label target,
                          MaximumDistance maximumDistance);
@@ -164,6 +166,8 @@ public:
   void add(uint32_t instruction);
   /// Add a branch instruction
   void addBranch(JumpEncoder encoder, Label target);
+  /// Create a jump table
+  void emitJumpTable(Label start, std::span<Label> table);
   /// Move a constant into a register
   void movConst(GReg reg, uint64_t val);
 
