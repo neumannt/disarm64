@@ -76,38 +76,50 @@ typedef enum Da64PrfOp Da64PrfOp;
 
 // Encoding API
 
-struct DA_GReg {
+struct GReg {
   uint8_t val;
 };
-struct DA_GRegZR {
+struct GRegZR {
   uint8_t val;
-  constexpr explicit DA_GRegZR(uint8_t v) : val(v) {}
-  constexpr DA_GRegZR(DA_GReg r) : val(r.val) {}
+  constexpr explicit GRegZR(uint8_t v) : val(v) {}
+  constexpr GRegZR(GReg r) : val(r.val) {}
 };
-struct DA_GRegSP {
+struct GRegSP {
   uint8_t val;
-  constexpr explicit DA_GRegSP(uint8_t v) : val(v) {}
-  constexpr DA_GRegSP(DA_GReg r) : val(r.val) {}
+  constexpr explicit GRegSP(uint8_t v) : val(v) {}
+  constexpr GRegSP(GReg r) : val(r.val) {}
 };
-struct DA_VReg {
+struct VReg {
   uint8_t val;
 };
 
-static inline constexpr DA_GReg DA_GP(uint8_t num) {
-  return DA_GReg{uint8_t(num & 31)};
+static inline constexpr GReg DA_GP(uint8_t num) {
+  return GReg{uint8_t(num & 31)};
 }
-static constexpr DA_GRegZR DA_ZR = DA_GRegZR{31};
-static constexpr DA_GRegSP DA_SP = DA_GRegSP{31};
-static constexpr DA_VReg DA_V(uint8_t num) {
-  return DA_VReg{uint8_t(num & 31)};
-}
+static constexpr GRegZR DA_ZR = GRegZR{31};
+static constexpr GRegSP DA_SP = GRegSP{31};
+static constexpr VReg DA_V(uint8_t num) { return VReg{uint8_t(num & 31)}; }
 
-static inline constexpr DA_GRegSP DA_GPSP(DA_GRegSP r) { return r; }
-static inline constexpr DA_GRegZR DA_GPZR(DA_GRegZR r) { return r; }
-static inline constexpr uint8_t DA_REGVAL(DA_GReg r) { return r.val; }
-static inline constexpr uint8_t DA_REGVAL(DA_GRegZR r) { return r.val; }
-static inline constexpr uint8_t DA_REGVAL(DA_GRegSP r) { return r.val; }
-static inline constexpr uint8_t DA_REGVAL(DA_VReg r) { return r.val; }
+static inline constexpr GRegSP DA_GPSP(GRegSP r) { return r; }
+static inline constexpr GRegZR DA_GPZR(GRegZR r) { return r; }
+static inline constexpr uint8_t DA_REGVAL(GReg r) { return r.val; }
+static inline constexpr uint8_t DA_REGVAL(GRegZR r) { return r.val; }
+static inline constexpr uint8_t DA_REGVAL(GRegSP r) { return r.val; }
+static inline constexpr uint8_t DA_REGVAL(VReg r) { return r.val; }
+
+/// Convenience definitions
+static constexpr auto x0 = DA_GP(0), x1 = DA_GP(1), x2 = DA_GP(2),
+                      x3 = DA_GP(3), x4 = DA_GP(4), x5 = DA_GP(5),
+                      x6 = DA_GP(6), x7 = DA_GP(7), x8 = DA_GP(8),
+                      x9 = DA_GP(9), x10 = DA_GP(10), x11 = DA_GP(11),
+                      x12 = DA_GP(12), x13 = DA_GP(13), x14 = DA_GP(14),
+                      x15 = DA_GP(15), x16 = DA_GP(16), x17 = DA_GP(17),
+                      x18 = DA_GP(18), x19 = DA_GP(19), x20 = DA_GP(20),
+                      x21 = DA_GP(21), x22 = DA_GP(22), x23 = DA_GP(24),
+                      x25 = DA_GP(25), x26 = DA_GP(26), x27 = DA_GP(27),
+                      x28 = DA_GP(28), x29 = DA_GP(29), x30 = DA_GP(30);
+static constexpr auto sp = DA_SP;
+static constexpr auto xzr = DA_ZR;
 
 // Do not use. Sign extend lowest bits of imm.
 static inline int64_t da_sext(int64_t imm, unsigned bits) {
@@ -132,7 +144,7 @@ uint32_t __attribute__((const)) da_immsimdmovi(uint64_t value);
 
 /// Materialize cnst into reg; may write up to four instructions. Returns the
 /// number of instructions written.
-unsigned MOVconst(uint32_t* buf, DA_GReg reg, uint64_t cnst);
+unsigned MOVconst(uint32_t* buf, GReg reg, uint64_t cnst);
 
 // Decoding API
 

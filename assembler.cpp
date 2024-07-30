@@ -1,5 +1,6 @@
 #include "assembler.hpp"
 #include "disarm64.hpp"
+#include <sys/mman.h>
 #include <cassert>
 #include <cstdint>
 #include <cstring>
@@ -83,7 +84,45 @@ Assembler::Assembler()
 
 Assembler::~Assembler()
 // Destructor
-{}
+{
+  if (executableCode)
+    munmap(executableCode, executableCodeLimit - executableCode);
+}
+
+void* Assembler::ready()
+// Prepare for execution
+{
+  assert(!executableCode);
+  static constexpr uint64_t pageSize = 4096;
+  uint64_t usedSize = code.size() * sizeof(uint32_t);
+  uint64_t size = (usedSize + pageSize - 1) & (~(pageSize - 1));
+#if !defined(MAP_ANON) && !defined(MAP_ANONYMOUS)
+  int fd = open("/dev/zero", O_RDWR);
+  if (fd < 0)
+    return nullptr;
+
+  void* p = mmap(nullptr, size, PROT_READ | PROT_WRITE, MAP_PRIVATE, fd, 0);
+  close(fd);
+#else
+  void* p = mmap(nullptr, size, PROT_READ | PROT_WRITE,
+                 MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+#endif
+  if ((p == MAP_FAILED) || (!p))
+    return nullptr;
+  __builtin_memcpy(p, code.data(), usedSize);
+  executableCode = static_cast<byte*>(p);
+  executableCodeLimit = executableCode + size;
+  if (mprotect(executableCode, size, PROT_READ | PROT_EXEC) != 0)
+    return nullptr;
+  return executableCode;
+}
+
+pair<void*, size_t> Assembler::release()
+// Release the allocated code. Must be freed with munmap
+{
+  return pair<void*, size_t>(executableCode,
+                             executableCodeLimit - executableCode);
+}
 
 static inline int32_t getJumpDelta(int64_t source, int64_t target)
 // Compute the jump size in bytes
@@ -238,8 +277,8 @@ void Assembler::addBranch(JumpEncoder encoder, Label target)
   // Create a pending jump
   unsigned jumpPos = code.size();
   auto op = encoder(4);
-  code.push_back(op);
   addUndefinedLabel(move(encoder), code.size(), target, maximumDistance);
+  code.push_back(op);
   if (writer) [[unlikely]]
     writer->writeBranch(op, jumpPos, true);
 
@@ -429,6 +468,15 @@ void Assembler::addUndefinedLabel(JumpEncoder encoder, unsigned jumpPos,
     pendingLabelQueue[gapClass].first = pendingLabelQueue[gapClass].last = slot;
     recomputeDeadlines();
   }
+}
+
+void Assembler::movConst(GReg reg, uint64_t val)
+// Move a constant into a register
+{
+  uint32_t buffer[4];
+  unsigned len = MOVconst(buffer, reg, val);
+  for (unsigned index = 0; index != len; ++index)
+    add(buffer[index]);
 }
 
 }

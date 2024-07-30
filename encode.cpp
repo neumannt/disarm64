@@ -138,7 +138,7 @@ fail:
 #include "disarm64-private.inc"
 #undef DA64_ENCODER
 
-unsigned MOVconst(uint32_t* buf, DA_GReg reg, uint64_t cnst) {
+unsigned MOVconst(uint32_t* buf, GReg reg, uint64_t cnst) {
   if (cnst < 0x10000) {
     buf[0] = MOVZx(reg, (uint16_t)cnst);
     return 1;

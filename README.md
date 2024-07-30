@@ -11,21 +11,21 @@ The encoder generally exposes one function per instruction mnemonic/form/operati
 if (uint32_t inst = ADDxi(ra, rb, imm)) {
     asm.add(inst);
 } else {
-    DA_GReg tmp = allocTempReg();
+    GReg tmp = allocTempReg();
     asm.MOVconst(tmp, imm);
     asm.add(da_ADDx(ra, rb, tmp));
     freeTempReg();
 }
 ```
 
-Register classes are exposed as data types. General-purpose registers (`DA_GP(num)`) that are not `sp`/`xzr` have type `DA_GReg`, `DA_ZR` has type `DA_GRegZR`, `DA_SP` has type `DA_GRegSP`, and floating-point/SIMD registers `DA_V(num)` have type `DA_VReg`. Whenever a GP-or-ZR/GP-or-SP is accepted, functions accept both `DA_GReg` and `DA_GRegZR`/`DA_GRegSP`.
+Register classes are exposed as data types. General-purpose registers (`DA_GP(num)`) that are not `sp`/`xzr` have type `GReg`, `DA_ZR` has type `GRegZR`, `DA_SP` has type `GRegSP`, and floating-point/SIMD registers `DA_V(num)` have type `VReg`. Whenever a GP-or-ZR/GP-or-SP is accepted, functions accept both `GReg` and `GRegZR`/`GRegSP`.
 
 There are a few functions, which operate differently than standard assembler instructions:
 
-- `MOVconst(uint32_t* buf, DA_GReg, uint64_t)` produces a sequence of up to 4 instructions into the buffer to materialize the constant in the general-purpose register. The function returns the number of instructions written.
+- `MOVconst(uint32_t* buf, GReg, uint64_t)` produces a sequence of up to 4 instructions into the buffer to materialize the constant in the general-purpose register. The function returns the number of instructions written.
 - `add/sub` with immediate (`ADDxi` etc.) shift the immediate as required and also convert between `add`/`sub` as required, so encoding `add x0, x1, -1` will succeed and be transparently encoded as `sub x0, x1, 1`. This also works (and is correct) when flags are updated.
 
-- `MOVId/MOVI2d(DA_VReg, uint64_t)` tries to materialize the constant in a single `MOVI` instruction using an appropriate encoding.
+- `MOVId/MOVI2d(VReg, uint64_t)` tries to materialize the constant in a single `MOVI` instruction using an appropriate encoding.
 - Assembly aliases (e.g., `lsl`, `cmp`) are provided in most cases. `mov` to/from `sp` is named `MOV_SPx` for disambiguation.
 
 ## Decoder

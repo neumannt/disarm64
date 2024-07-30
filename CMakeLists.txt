@@ -20,6 +20,10 @@ add_executable(encode-test test/encode-test.cpp)
 target_include_directories(encode-test PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 target_link_libraries(encode-test disarm)
 
+add_executable(bf test/bf.cpp)
+target_include_directories(bf PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+target_link_libraries(bf disarm)
+
 #add_executable(test test.cpp)
 #target_include_directories(test PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 #target_link_libraries(test disarm)

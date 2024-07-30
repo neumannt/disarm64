@@ -10,6 +10,7 @@
 
 namespace disarm64 {
 
+struct GReg;
 class Assembler;
 
 /// A label for jumps
@@ -66,6 +67,8 @@ private:
   std::vector<uint64_t> code;
   /// The assembler writer (if any)
   AssemblerWriter* writer = nullptr;
+  /// The executable code
+  std::byte *executableCode = nullptr, *executableCodeLimit = nullptr;
   /// All labels
   std::vector<uintptr_t> labels;
   /// A pending label position
@@ -134,6 +137,10 @@ public:
 
   /// Install an assembler writer
   void setWriter(AssemblerWriter* out) { writer = out; }
+  /// Prepare for execution
+  void* ready();
+  /// Release the allocated code. Must be freed with munmap
+  std::pair<void*, size_t> release();
 
   /// Create a new label
   Label newLabel();
@@ -144,6 +151,8 @@ public:
   void add(uint32_t instruction);
   /// Add a branch instruction
   void addBranch(JumpEncoder encoder, Label target);
+  /// Move a constant into a register
+  void movConst(GReg reg, uint64_t val);
 };
 
 }

@@ -429,12 +429,12 @@ ENC_FUNCS = {
     "const": EncodeFunc((), ("{val}",)),
     "bool": EncodeFunc(("bool",), ("!!{0}",)),
     "regzr": EncodeFunc((), ("31",)),
-    "reggp": EncodeFunc(("DA_GRegZR",), ("DA_REGVAL({0})",)),
-    "reggpsp": EncodeFunc(("DA_GRegSP",), ("DA_REGVAL({0})",)),
-    "reggpnozr": EncodeFunc(("DA_GReg",), ("DA_REGVAL({0})",)),
-    "reggpls64": EncodeFunc(("DA_GReg",), ("DA_REGVAL({0})",), cond="DA_REGVAL({0})<24&&!(DA_REGVAL({0})&1)"),
-    "regfp": EncodeFunc(("DA_VReg",), ("DA_REGVAL({0})",)),
-    "regfplim": EncodeFunc(("DA_VReg",), ("DA_REGVAL({0})<<16",), singleExpansion=True, cond="DA_REGVAL({0})<{max}"),
+    "reggp": EncodeFunc(("GRegZR",), ("DA_REGVAL({0})",)),
+    "reggpsp": EncodeFunc(("GRegSP",), ("DA_REGVAL({0})",)),
+    "reggpnozr": EncodeFunc(("GReg",), ("DA_REGVAL({0})",)),
+    "reggpls64": EncodeFunc(("GReg",), ("DA_REGVAL({0})",), cond="DA_REGVAL({0})<24&&!(DA_REGVAL({0})&1)"),
+    "regfp": EncodeFunc(("VReg",), ("DA_REGVAL({0})",)),
+    "regfplim": EncodeFunc(("VReg",), ("DA_REGVAL({0})<<16",), singleExpansion=True, cond="DA_REGVAL({0})<{max}"),
     "prfop": EncodeFunc(("enum Da64PrfOp  prfop",), ("{0}&31",)),
     "cond": EncodeFunc(("Da64Cond",), ("{0}",)),
     "invcond": EncodeFunc(("Da64Cond",), ("({0}^1)",)),
@@ -562,7 +562,7 @@ class EncoderGenerator:
             condexpr = "&&".join(f"({cond})" for cond in conds)
             expr = f"!({condexpr}) ? 0 : {expr}"
 
-        substs = {"DA_GRegSP": "DA_GPSP", "DA_GRegZR": "DA_GPZR"}
+        substs = {"GRegSP": "DA_GPSP", "GRegZR": "DA_GPZR"}
         implname = f"{name}"
         paramstr = ", ".join(f"{ty} {parname}" for ty, parname in zip(paramtys, parnames))
         if not paramstr:
