@@ -1,5 +1,8 @@
 #include "assembler.hpp"
 #include "disarm64.hpp"
+#include <algorithm>
+#include <iostream>
+#include <iomanip>
 #include <sys/mman.h>
 #include <cassert>
 #include <cstdint>
@@ -89,9 +92,28 @@ Assembler::~Assembler()
     munmap(executableCode, executableCodeLimit - executableCode);
 }
 
+void Assembler::dump()
+  // Dump generated code (for debugging)
+{
+  flushJumpThunks(false);
+  char buffer[128];
+  for (auto op:code) {
+     ios_base::fmtflags flags = cerr.setf(ios_base::hex, ios_base::basefield);
+     char fill = cerr.fill('0');
+     cerr << std::setw(4) << op;
+     cerr.fill(fill);
+     cerr.setf(flags, std::ios_base::basefield);
+     disarm64::Da64Inst ddi;
+     disarm64::da64_decode(op, &ddi);
+     disarm64::da64_format(&ddi, buffer);
+     cerr << " " << buffer << endl;
+  }
+}
+
 void* Assembler::ready()
 // Prepare for execution
 {
+  flushJumpThunks(false);
   assert(!executableCode);
   static constexpr uint64_t pageSize = 4096;
   uint64_t usedSize = code.size() * sizeof(uint32_t);
@@ -127,7 +149,7 @@ pair<void*, size_t> Assembler::release()
 static inline int32_t getJumpDelta(int64_t source, int64_t target)
 // Compute the jump size in bytes
 {
-  int64_t delta = (target - source) * 4;
+  int64_t delta = target - source;
   assert(int64_t(int32_t(delta)) == delta);
   return delta;
 }
@@ -137,10 +159,10 @@ static inline size_t getJumpDeadline(unsigned source,
 // Compute the deadline for a jump instruction
 {
   return size_t(source) + ((max == Assembler::MaximumDistance::J1MB)
-                               ? (((1 << 20) / 4) - 1)
+                               ? ((1ul << 18) - 1)
                                : ((max == Assembler::MaximumDistance::J32KB)
-                                      ? (((1 << 15) / 4) - 1)
-                                      : ((1 << 27) / 4) - 1));
+                                      ? ((1ul << 13) - 1)
+                                      : (1ul << 25) - 1));
 }
 
 size_t Assembler::PendingLabel::getDeadline() const
@@ -153,11 +175,11 @@ static inline Assembler::MaximumDistance
 identifyMaximumDistance(Assembler::JumpEncoder& encoder)
 // Identify the maximum distance of a branch
 {
-  if (encoder(1 << 27 - 4))
+  if (encoder(1 << 25 - 1))
     return Assembler::MaximumDistance::J128MB;
-  if (encoder(1 << 20 - 4))
+  if (encoder(1 << 18 - 1))
     return Assembler::MaximumDistance::J1MB;
-  assert(encoder(1 << 15 - 4) && "invalid branch");
+  assert(encoder(1 << 11 - 1) && "invalid branch");
   return Assembler::MaximumDistance::J32KB;
 }
 
@@ -190,7 +212,7 @@ void Assembler::placeLabel(Label label)
   bool needsUpdate = false;
   for (auto iter = info >> 1; iter;) {
     auto& p = pendingLabels[iter - 1];
-    ssize_t disp = ssize_t(ofs - p.offset) * 4;
+    ssize_t disp = ssize_t(ofs - p.offset);
     auto op = p.encoder(disp);
 
     // Remove from pending queue
@@ -337,7 +359,7 @@ void Assembler::flushJumpThunks(bool afterUnconditionalBranch)
   for (auto& b : outOfReachList) {
     // Generate a long range outgoing jump
     auto thunkPosition = code.size();
-    ssize_t labelOffset = ssize_t((labels[b.target] >> 1) - thunkPosition) * 4;
+    ssize_t labelOffset = ssize_t((labels[b.target] >> 1) - thunkPosition);
 
     auto op = B(labelOffset);
     code.push_back(op);
@@ -347,7 +369,7 @@ void Assembler::flushJumpThunks(bool afterUnconditionalBranch)
     }
 
     // And update the short range incoming jump
-    labelOffset = ssize_t(thunkPosition - b.jump) * 4;
+    labelOffset = ssize_t(thunkPosition - b.jump);
     op = b.encoder(labelOffset);
     assert(op);
     code[b.jump] = op;
@@ -395,7 +417,7 @@ void Assembler::flushJumpThunks(bool afterUnconditionalBranch)
     }
 
     // Update the coming jump
-    ssize_t labelOffset = (thunkPosition - b.offset) * 4;
+    ssize_t labelOffset = (thunkPosition - b.offset);
     auto op = b.encoder(labelOffset);
     assert(op);
     code[b.offset] = op;
@@ -425,7 +447,7 @@ void Assembler::flushJumpThunks(bool afterUnconditionalBranch)
 
   // Update the jump over the thunks (if any)
   if (!afterUnconditionalBranch) {
-    ssize_t labelOffset = (code.size() - jumpLocation) * 4;
+    ssize_t labelOffset = (code.size() - jumpLocation);
     auto op = B(labelOffset);
     assert(op);
     code[jumpLocation] = op;

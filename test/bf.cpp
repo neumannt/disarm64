@@ -5,6 +5,7 @@
 #include <fstream>
 #include <vector>
 #include <cstdio>
+#include <dlfcn.h>
 
 using namespace disarm64;
 using namespace std;
@@ -24,7 +25,7 @@ static void translateBf(istream& in, disarm64::Assembler& as)
   constexpr int saveSize = 48;
   as.add(STPx_pre(x29, x30, sp, -saveSize));
   as.add(STPx(putcharPtr, getcharPtr, sp, 16));
-  as.add(STRxu(stackPtr, sp, 16));
+  as.add(STRxu(stackPtr, sp, 32));
   as.add(MOVx(putcharPtr, x0));
   as.add(MOVx(getcharPtr, x1));
   as.add(MOVx(stackPtr, x2));
@@ -93,14 +94,22 @@ static void translateBf(istream& in, disarm64::Assembler& as)
   }
   as.add(LDRxu(stackPtr, sp, 16+16));
   as.add(LDPx(putcharPtr, getcharPtr, sp, 16));
-  as.add(LDPx_post(x29, x20, sp, saveSize));
+  as.add(LDPx_post(x29, x30, sp, saveSize));
   as.add(RET(x30));
 }
 
 int main(int argc, char* argv[]) {
+  ofstream out;
   bool doDump=false;
   char** args = argv+1, **argLimit = argv+argc;
   if ((args<argLimit)&&(args[0]=="--dump"sv)) {
+    out=ofstream("test-assembler.s");
+    out << ".cfi_sections .eh_frame" << endl
+        << ".globl _bf" << endl
+        << ".type _bf, @function" << endl
+        << ".p2align 4" << endl
+        << ".cfi_startproc" << endl
+	<< "_bf:" << endl;
     doDump=true;
     ++args;
   }
@@ -109,13 +118,25 @@ int main(int argc, char* argv[]) {
     return 1;
   }
   disarm64::Assembler assembler;
-  disarm64::AssemblerWriter writer([](const char* str, unsigned len) { cout << string_view(str, len); });
+  disarm64::AssemblerWriter writer([&out](const char* str, unsigned len) { out << string_view(str, len); });
   if (doDump) assembler.setWriter(&writer);
 
   ifstream in(args[0]);
   translateBf(in, assembler);
 
-  auto func = reinterpret_cast<void(*)(int(*)(int), int(*)(),void*)>(assembler.ready());
+  using FuncType = void(*)(int(*)(int), int(*)(),void*);
+  auto func = reinterpret_cast<FuncType>(assembler.ready());
+  if (doDump) {
+     out << ".cfi_endproc" << endl
+         << ".size _bf, .-_bf" << endl
+         << ".section .note.GNU-stack,\"\",@progbits" << endl;
+     out.flush();
+     out.close();
+     system("gcc -shared -fPIC -g -march=armv8.1-a+crc -o test-assembler.so test-assembler.s");
+     auto lib = dlopen("./test-assembler.so", RTLD_NOW);
+     func = reinterpret_cast<FuncType>(dlsym(lib, "_bf"));
+     assembler.dump();
+  }
   static int64_t stack[128 * 1024];
   func(&putchar, &getchar, stack);
 }

@@ -64,7 +64,7 @@ private:
   static constexpr size_t noDeadline = ~size_t(0);
 
   /// The generate code
-  std::vector<uint64_t> code;
+  std::vector<uint32_t> code;
   /// The assembler writer (if any)
   AssemblerWriter* writer = nullptr;
   /// The executable code
@@ -137,6 +137,8 @@ public:
 
   /// Install an assembler writer
   void setWriter(AssemblerWriter* out) { writer = out; }
+  /// Dump generated code (for debugging)
+  void dump();
   /// Prepare for execution
   void* ready();
   /// Release the allocated code. Must be freed with munmap
