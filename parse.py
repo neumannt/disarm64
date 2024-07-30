@@ -407,7 +407,7 @@ enum Da64InstGroup {{
   DA64G_UNKNOWN=0,
   {"".join(grpnum_strs)}
 }};
-#define DA64_GROUP(mnem) ((mnem) >> {BITS_SUBGRP})
+static inline constexpr Da64InstGroup DA64_GROUP(unsigned mnem) {{ return Da64InstGroup(mnem >> {BITS_SUBGRP}); }}
 """
 
         return public, {
@@ -563,13 +563,7 @@ class EncoderGenerator:
             expr = f"!({condexpr}) ? 0 : {expr}"
 
         substs = {"DA_GRegSP": "DA_GPSP", "DA_GRegZR": "DA_GPZR"}
-        if any(ty in substs for ty in paramtys):
-            implname = f"impl_{name}"
-            macroparams = ",".join(parnames)
-            macroargs = ",".join(f"{substs.get(ty, '')}({parname})" for ty, parname in zip(paramtys, parnames))
-            self.decls.append(f"#define {name}({macroparams}) {implname}({macroargs})")
-        else:
-            implname = f"{name}"
+        implname = f"{name}"
         paramstr = ", ".join(f"{ty} {parname}" for ty, parname in zip(paramtys, parnames))
         if not paramstr:
             paramstr = "void"

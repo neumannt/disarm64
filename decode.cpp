@@ -40,15 +40,17 @@ static uint64_t immlogical(unsigned sf, unsigned N, unsigned immr,
 }
 
 static struct Da64Op OPreggp(unsigned idx, bool sf) {
-  return (struct Da64Op){DA_OP_REGGP, .reg = uint8_t(idx), .reggp = {sf}};
+  return (struct Da64Op){
+      .type = DA_OP_REGGP, .reg = uint8_t(idx), .reggp = {sf}};
 }
 static struct Da64Op OPreggpinc(unsigned idx) {
-  return (struct Da64Op){DA_OP_REGGPINC, .reg = uint8_t(idx), .reggp = {true}};
+  return (struct Da64Op){
+      .type = DA_OP_REGGPINC, .reg = uint8_t(idx), .reggp = {true}};
 }
 
 static struct Da64Op OPreggpsp(unsigned idx, bool sf) {
   return (struct Da64Op){
-      idx != 31 ? DA_OP_REGGP : DA_OP_REGSP,
+      .type = idx != 31 ? DA_OP_REGGP : DA_OP_REGSP,
       .reg = uint8_t(idx),
       .reggp = {sf},
   };
@@ -56,14 +58,14 @@ static struct Da64Op OPreggpsp(unsigned idx, bool sf) {
 
 static struct Da64Op OPreggpmaysp(bool maysp, unsigned idx, bool sf) {
   return (struct Da64Op){
-      idx < 31 || !maysp ? DA_OP_REGGP : DA_OP_REGSP,
+      .type = idx < 31 || !maysp ? DA_OP_REGGP : DA_OP_REGSP,
       .reg = uint8_t(idx),
       .reggp = {sf},
   };
 }
 static struct Da64Op OPreggpprf(bool isprf, unsigned idx, bool sf) {
   return (struct Da64Op){
-      isprf ? DA_OP_PRFOP : DA_OP_REGGP,
+      .type = isprf ? DA_OP_PRFOP : DA_OP_REGGP,
       .reg = uint8_t(idx),
       .reggp = {sf},
   };
@@ -71,88 +73,109 @@ static struct Da64Op OPreggpprf(bool isprf, unsigned idx, bool sf) {
 
 static struct Da64Op OPreggpext(unsigned idx, bool sf, enum Da64Ext ext,
                                 unsigned shift) {
-  return (struct Da64Op){DA_OP_REGGPEXT, .reg = uint8_t(idx),
+  return (struct Da64Op){.type = DA_OP_REGGPEXT,
+                         .reg = uint8_t(idx),
                          .reggpext = {sf, ext, uint8_t(shift)}};
 }
 static struct Da64Op OPregfp(unsigned idx, unsigned size) {
-  return (struct Da64Op){DA_OP_REGFP, .reg = uint8_t(idx), .regfp = {uint8_t(size)}};
+  return (struct Da64Op){
+      .type = DA_OP_REGFP, .reg = uint8_t(idx), .regfp = {uint8_t(size)}};
 }
 static struct Da64Op OPregvec(unsigned idx, unsigned esize, bool Q) {
-  return (struct Da64Op){DA_OP_REGVEC, .reg = uint8_t(idx),
+  return (struct Da64Op){.type = DA_OP_REGVEC,
+                         .reg = uint8_t(idx),
                          .regvec = {uint8_t((esize << 1) + Q)}};
 }
 static struct Da64Op OPregvidx(unsigned idx, unsigned esize, unsigned elem) {
-  return (struct Da64Op){DA_OP_REGVIDX, .reg = uint8_t(idx), .regvidx = {uint8_t(esize), uint8_t(elem)}};
+  return (struct Da64Op){.type = DA_OP_REGVIDX,
+                         .reg = uint8_t(idx),
+                         .regvidx = {uint8_t(esize), uint8_t(elem)}};
 }
 static struct Da64Op OPregvtbl(unsigned idx, unsigned esize, bool Q,
                                unsigned cnt) {
-  return (struct Da64Op){DA_OP_REGVTBL, .reg = uint8_t(idx),
+  return (struct Da64Op){.type = DA_OP_REGVTBL,
+                         .reg = uint8_t(idx),
                          .regvtbl = {uint8_t((esize << 1) + Q), uint8_t(cnt)}};
 }
 static struct Da64Op OPregvtblidx(unsigned idx, unsigned esize, unsigned elem,
                                   unsigned cnt) {
-  return (struct Da64Op){DA_OP_REGVTBLIDX, .reg = uint8_t(idx),
-                         .regvtblidx = {uint8_t(esize), uint8_t(elem), uint8_t(cnt)}};
+  return (struct Da64Op){
+      .type = DA_OP_REGVTBLIDX,
+      .reg = uint8_t(idx),
+      .regvtblidx = {uint8_t(esize), uint8_t(elem), uint8_t(cnt)}};
 }
 static struct Da64Op OPmemuoff(unsigned idx, uint16_t off) {
-  return (struct Da64Op){DA_OP_MEMUOFF, .reg = uint8_t(idx), .uimm16 = off};
+  return (struct Da64Op){
+      .type = DA_OP_MEMUOFF, .reg = uint8_t(idx), .uimm16 = off};
 }
 static struct Da64Op OPmemsoff(unsigned idx, int16_t off) {
-  return (struct Da64Op){DA_OP_MEMSOFF, .reg = uint8_t(idx), .simm16 = off};
+  return (struct Da64Op){
+      .type = DA_OP_MEMSOFF, .reg = uint8_t(idx), .simm16 = off};
 }
 static struct Da64Op OPmemsoffpre(unsigned idx, int16_t off) {
-  return (struct Da64Op){DA_OP_MEMSOFFPRE, .reg = uint8_t(idx), .simm16 = off};
+  return (struct Da64Op){
+      .type = DA_OP_MEMSOFFPRE, .reg = uint8_t(idx), .simm16 = off};
 }
 static struct Da64Op OPmemsoffpost(unsigned idx, int16_t off) {
-  return (struct Da64Op){DA_OP_MEMSOFFPOST, .reg = uint8_t(idx), .simm16 = off};
+  return (struct Da64Op){
+      .type = DA_OP_MEMSOFFPOST, .reg = uint8_t(idx), .simm16 = off};
 }
 static struct Da64Op OPmemreg(unsigned idx, unsigned offreg, enum Da64Ext ext,
                               bool scale, unsigned shift) {
-  return (struct Da64Op){DA_OP_MEMREG, .reg = uint8_t(idx),
-                         .memreg = {scale, ext, uint8_t(shift), uint8_t(offreg)}};
+  return (struct Da64Op){
+      .type = DA_OP_MEMREG,
+      .reg = uint8_t(idx),
+      .memreg = {scale, ext, uint8_t(shift), uint8_t(offreg)}};
 }
 static struct Da64Op OPmemregsimdpost(unsigned idx, unsigned offreg,
                                       unsigned constoff) {
   if (offreg == 31)
-    return (struct Da64Op){DA_OP_MEMSOFFPOST, .reg = uint8_t(idx), .simm16 = int16_t(constoff)};
-  return (struct Da64Op){DA_OP_MEMREGPOST, .reg = uint8_t(idx),
+    return (struct Da64Op){.type = DA_OP_MEMSOFFPOST,
+                           .reg = uint8_t(idx),
+                           .simm16 = int16_t(constoff)};
+  return (struct Da64Op){.type = DA_OP_MEMREGPOST,
+                         .reg = uint8_t(idx),
                          .memreg = {0, DA_EXT_UXTX, 0, uint8_t(offreg)}};
 }
 static struct Da64Op OPmeminc(unsigned idx) {
-  return (struct Da64Op){DA_OP_MEMINC, .reg = uint8_t(idx), .uimm16 = 0};
+  return (struct Da64Op){
+      .type = DA_OP_MEMINC, .reg = uint8_t(idx), .uimm16 = 0};
 }
 static struct Da64Op OPimmsmall(unsigned imm6) {
-  return (struct Da64Op){DA_OP_IMMSMALL, {0}, .uimm16 = uint16_t(imm6)};
+  return (struct Da64Op){
+      .type = DA_OP_IMMSMALL, .reg = {0}, .uimm16 = uint16_t(imm6)};
 }
 static struct Da64Op OPsimm(int16_t imm) {
-  return (struct Da64Op){DA_OP_SIMM, {0}, .simm16 = imm};
+  return (struct Da64Op){.type = DA_OP_SIMM, .reg = {0}, .simm16 = imm};
 }
 static struct Da64Op OPuimm(uint16_t imm) {
-  return (struct Da64Op){DA_OP_UIMM, {0}, .uimm16 = imm};
+  return (struct Da64Op){.type = DA_OP_UIMM, .reg = {0}, .uimm16 = imm};
 }
 static struct Da64Op OPuimmshift(uint16_t imm, bool msl, unsigned shift) {
-  return (struct Da64Op){DA_OP_UIMMSHIFT, .immshift = {msl, uint8_t(shift)},
+  return (struct Da64Op){.type = DA_OP_UIMMSHIFT,
+                         .immshift = {msl, uint8_t(shift)},
                          .uimm16 = imm};
 }
 static struct Da64Op OPreladdr(struct Da64Inst* ddi, int64_t imm) {
   ddi->imm64 = imm;
-  return (struct Da64Op){DA_OP_IMMLARGE, {0}, .uimm16 = 0};
+  return (struct Da64Op){.type = DA_OP_IMMLARGE, .reg = {0}, .uimm16 = 0};
 }
 static struct Da64Op OPimmlogical(struct Da64Inst* ddi, unsigned sf, unsigned N,
                                   unsigned immr, unsigned imms) {
   ddi->imm64 = immlogical(sf, N, immr, imms);
-  return (struct Da64Op){DA_OP_IMMLARGE, {0}, .uimm16 = uint16_t(sf)};
+  return (struct Da64Op){
+      .type = DA_OP_IMMLARGE, .reg = {0}, .uimm16 = uint16_t(sf)};
 }
 static struct Da64Op OPimmsimdmask(struct Da64Inst* ddi, uint8_t imm8) {
   uint64_t res = 0;
   for (unsigned i = 0; i < 8; i++)
     res += imm8 & (1 << i) ? (uint64_t)0xff << (i * 8) : 0;
   ddi->imm64 = res;
-  return (struct Da64Op){DA_OP_IMMLARGE, {0}, .uimm16 = 1};
+  return (struct Da64Op){.type = DA_OP_IMMLARGE, .reg = {0}, .uimm16 = 1};
 }
 static struct Da64Op OPimmfloatzero(struct Da64Inst* ddi) {
   ddi->float8 = 0.0f;
-  return (struct Da64Op){DA_OP_IMMFLOAT, {0}, .uimm16 = 0x100};
+  return (struct Da64Op){.type = DA_OP_IMMFLOAT, .reg = {0}, .uimm16 = 0x100};
 }
 static struct Da64Op OPimmfloat(struct Da64Inst* ddi, uint8_t imm8) {
   uint32_t res = (uint32_t)(imm8 & 0x80) << 24;
@@ -161,13 +184,14 @@ static struct Da64Op OPimmfloat(struct Da64Inst* ddi, uint8_t imm8) {
   // clang-format off
   ddi->float8 = (union { uint32_t i; float f; }){.i = res}.f;
   // clang-format on
-  return (struct Da64Op){DA_OP_IMMFLOAT, {0}, .uimm16 = imm8};
+  return (struct Da64Op){.type = DA_OP_IMMFLOAT, .reg = {0}, .uimm16 = imm8};
 }
 static struct Da64Op OPsysreg(unsigned reg) {
-  return (struct Da64Op){DA_OP_SYSREG, {0}, .sysreg = uint8_t(reg)};
+  return (struct Da64Op){
+      .type = DA_OP_SYSREG, .reg = {0}, .sysreg = uint8_t(reg)};
 }
 static struct Da64Op OPcond(unsigned cond) {
-  return (struct Da64Op){DA_OP_COND, {0}, .cond = uint8_t(cond)};
+  return (struct Da64Op){.type = DA_OP_COND, .reg = {0}, .cond = uint8_t(cond)};
 }
 
 void da64_decode(uint32_t inst, struct Da64Inst* ddi) {

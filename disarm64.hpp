@@ -93,10 +93,14 @@ struct DA_VReg {
   uint8_t val;
 };
 
-static inline constexpr DA_GReg DA_GP(uint8_t num) { return DA_GReg{uint8_t(num&31)}; }
+static inline constexpr DA_GReg DA_GP(uint8_t num) {
+  return DA_GReg{uint8_t(num & 31)};
+}
 static constexpr DA_GRegZR DA_ZR = DA_GRegZR{31};
 static constexpr DA_GRegSP DA_SP = DA_GRegSP{31};
-static constexpr DA_VReg DA_V(uint8_t num) { return DA_VReg{uint8_t(num&31)}; }
+static constexpr DA_VReg DA_V(uint8_t num) {
+  return DA_VReg{uint8_t(num & 31)};
+}
 
 static inline constexpr DA_GRegSP DA_GPSP(DA_GRegSP r) { return r; }
 static inline constexpr DA_GRegZR DA_GPZR(DA_GRegZR r) { return r; }
@@ -283,4 +287,4 @@ void da64_format(const struct Da64Inst* ddi, char* buf128);
 
 }
 
-#endif // DA_DISARM64_H_
+#endif

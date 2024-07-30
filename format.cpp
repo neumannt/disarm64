@@ -69,7 +69,8 @@ static char* da_strpcatreggp(char* __restrict dst, unsigned sf, unsigned idx) {
   return da_strpcat4(dst, (sf ? xstr : wstr) + idx * 4, idx >= 10 ? 3 : 2);
 }
 
-static char* da_strpcatreggpsp(char* __restrict dst, unsigned sf, unsigned idx) {
+static char* da_strpcatreggpsp(char* __restrict dst, unsigned sf,
+                               unsigned idx) {
   const char* wstr = "w0\0 w1\0 w2\0 w3\0 w4\0 w5\0 w6\0 w7\0 "
                      "w8\0 w9\0 w10\0w11\0w12\0w13\0w14\0w15\0"
                      "w16\0w17\0w18\0w19\0w20\0w21\0w22\0w23\0"
@@ -101,7 +102,9 @@ void da64_format(const struct Da64Inst* ddi, char* buf128) {
 #include "disarm64-private.inc"
 #undef DA64_DECSTR
       ;
-  struct mnemtabentry { uint16_t key, value; };
+  struct mnemtabentry {
+    uint16_t key, value;
+  };
   static constexpr mnemtabentry mnemtab[] = {
 #define DA64_DECSTRTAB
 #include "disarm64-private.inc"
@@ -111,16 +114,19 @@ void da64_format(const struct Da64Inst* ddi, char* buf128) {
   const char* va = ".8b .16b.4h .8h .2s .4s .1d .2d .2h .1q";
 
   char* end = buf128;
-  if (ddi->mnem <= mnemtab[mnemtabSize-1].key) {
+  if (ddi->mnem <= mnemtab[mnemtabSize - 1].key) {
     uint64_t key = ddi->mnem;
-    unsigned l=0,u=mnemtabSize;
-    while (u-l>1) {
-      unsigned m=l+((u-l)/2);
-      if (mnemtab[m].key>key) u=m; else l=m;
+    unsigned l = 0, u = mnemtabSize;
+    while (u - l > 1) {
+      unsigned m = l + ((u - l) / 2);
+      if (mnemtab[m].key > key)
+        u = m;
+      else
+        l = m;
     }
-    if ((l<mnemtabSize)&&(mnemtab[l].key==key))
-    end = da_strpcat12(end, mnemstr + (mnemtab[l].value & 0xfff),
-                       mnemtab[l].value >> 12);
+    if ((l < mnemtabSize) && (mnemtab[l].key == key))
+      end = da_strpcat12(end, mnemstr + (mnemtab[l].value & 0xfff),
+                         mnemtab[l].value >> 12);
   }
   for (unsigned i = 0; i < sizeof(ddi->ops) / sizeof(ddi->ops[0]); i++) {
     if (ddi->ops[i].type == DA_OP_NONE)
