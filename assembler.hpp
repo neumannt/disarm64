@@ -43,12 +43,15 @@ public:
   AssemblerWriter(Callback callback);
   /// Destructor
   ~AssemblerWriter();
+
   /// Write a label
   void writeLabel(uint32_t label, bool proxy);
   /// Write an instruction
   void writeOp(uint32_t op);
   /// Write a branch instruction
   void writeBranch(uint32_t op, uint32_t label, bool proxy);
+  /// Write a raw string
+  void writeRaw(const char* str, uintptr_t len) { callback(str, len); }
 };
 
 /// High level interface for generating assembler code
@@ -58,6 +61,14 @@ public:
   using JumpEncoder = std::move_only_function<uint32_t(int32_t)>;
   /// Maximum distance of a branch
   enum class MaximumDistance { J32KB, J1MB, J128MB };
+  /// A patchable position
+  class PatchablePosition {
+    size_t pos;
+    unsigned reg;
+
+    PatchablePosition(size_t pos, unsigned reg) : pos(pos), reg(reg) {}
+    friend class Assembler;
+  };
 
 private:
   /// Marker for no deadline
@@ -145,7 +156,7 @@ public:
   std::pair<void*, size_t> release();
 
   /// Create a new label
-  Label newLabel();
+  [[nodiscard]] Label newLabel();
   /// Place a label
   void placeLabel(Label label);
 
@@ -155,6 +166,12 @@ public:
   void addBranch(JumpEncoder encoder, Label target);
   /// Move a constant into a register
   void movConst(GReg reg, uint64_t val);
+
+  /// Move a constant into a register in a way that can be changed later.
+  /// This is intended for sp adjustment in the function prologue.
+  [[nodiscard]] PatchablePosition patchableMovConst32(GReg reg);
+  /// Patch the adjustment
+  void patchMovConst32(PatchablePosition, uint32_t value);
 };
 
 }

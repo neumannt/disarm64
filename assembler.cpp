@@ -1,12 +1,12 @@
 #include "assembler.hpp"
 #include "disarm64.hpp"
-#include <algorithm>
-#include <iostream>
-#include <iomanip>
 #include <sys/mman.h>
+#include <algorithm>
 #include <cassert>
 #include <cstdint>
 #include <cstring>
+#include <iomanip>
+#include <iostream>
 
 // Disarm — Fast AArch64 Decode/Encoder
 // SPDX-License-Identifier: BSD-3-Clause
@@ -93,20 +93,20 @@ Assembler::~Assembler()
 }
 
 void Assembler::dump()
-  // Dump generated code (for debugging)
+// Dump generated code (for debugging)
 {
   flushJumpThunks(false);
   char buffer[128];
-  for (auto op:code) {
-     ios_base::fmtflags flags = cerr.setf(ios_base::hex, ios_base::basefield);
-     char fill = cerr.fill('0');
-     cerr << std::setw(4) << op;
-     cerr.fill(fill);
-     cerr.setf(flags, std::ios_base::basefield);
-     disarm64::Da64Inst ddi;
-     disarm64::da64_decode(op, &ddi);
-     disarm64::da64_format(&ddi, buffer);
-     cerr << " " << buffer << endl;
+  for (auto op : code) {
+    ios_base::fmtflags flags = cerr.setf(ios_base::hex, ios_base::basefield);
+    char fill = cerr.fill('0');
+    cerr << std::setw(4) << op;
+    cerr.fill(fill);
+    cerr.setf(flags, std::ios_base::basefield);
+    disarm64::Da64Inst ddi;
+    disarm64::da64_decode(op, &ddi);
+    disarm64::da64_format(&ddi, buffer);
+    cerr << " " << buffer << endl;
   }
 }
 
@@ -158,11 +158,11 @@ static inline size_t getJumpDeadline(unsigned source,
                                      Assembler::MaximumDistance max)
 // Compute the deadline for a jump instruction
 {
-  return size_t(source) + ((max == Assembler::MaximumDistance::J1MB)
-                               ? ((1ul << 18) - 1)
-                               : ((max == Assembler::MaximumDistance::J32KB)
-                                      ? ((1ul << 13) - 1)
-                                      : (1ul << 25) - 1));
+  return size_t(source) +
+         ((max == Assembler::MaximumDistance::J1MB)
+              ? ((1ul << 18) - 1)
+              : ((max == Assembler::MaximumDistance::J32KB) ? ((1ul << 13) - 1)
+                                                            : (1ul << 25) - 1));
 }
 
 size_t Assembler::PendingLabel::getDeadline() const
@@ -499,6 +499,41 @@ void Assembler::movConst(GReg reg, uint64_t val)
   unsigned len = MOVconst(buffer, reg, val);
   for (unsigned index = 0; index != len; ++index)
     add(buffer[index]);
+}
+
+Assembler::PatchablePosition Assembler::patchableMovConst32(GReg reg)
+// Move a constant into a register in a way that can be changed later.
+{
+  PatchablePosition result(code.size(), reg.val);
+  code.push_back(MOVZw(reg, 0x5678));
+  code.push_back(MOVKw_shift(reg, 0x1234, 1));
+  if (writer) [[unlikely]] {
+    char buffer[128];
+    snprintf(buffer, sizeof(buffer), "mov w%u, const%ulow\n", unsigned(reg.val),
+             unsigned(result.pos));
+    writer->writeRaw(buffer, strlen(buffer));
+    snprintf(buffer, sizeof(buffer), "movk w%u, const%uhigh, lsl #16\n",
+             unsigned(reg.val), unsigned(result.pos));
+    writer->writeRaw(buffer, strlen(buffer));
+  }
+  return result;
+}
+
+void Assembler::patchMovConst32(PatchablePosition pos, uint32_t value)
+// Patch the adjustment
+{
+  auto reg = GReg(pos.reg);
+  code[pos.pos] = MOVZw(reg, value & 0xFFFF);
+  code[pos.pos + 1] = MOVKw_shift(reg, value >> 16, 1);
+  if (writer) [[unlikely]] {
+    char buffer[128];
+    snprintf(buffer, sizeof(buffer), "const%ulow=%u\n", unsigned(pos.pos),
+             unsigned(value & 0xFFFF));
+    writer->writeRaw(buffer, strlen(buffer));
+    snprintf(buffer, sizeof(buffer), "const%uhigh=%u\n", unsigned(pos.pos),
+             unsigned(value >> 16));
+    writer->writeRaw(buffer, strlen(buffer));
+  }
 }
 
 }
