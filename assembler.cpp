@@ -16,7 +16,7 @@ using namespace std;
 namespace disarm64 {
 
 AssemblerWriter::AssemblerWriter(Callback callback)
-    : callback(move(callback))
+    : callback(std::move(callback))
 // Constructor
 {}
 
@@ -175,11 +175,11 @@ static inline Assembler::MaximumDistance
 identifyMaximumDistance(Assembler::JumpEncoder& encoder)
 // Identify the maximum distance of a branch
 {
-  if (encoder(1 << 25 - 1))
+  if (encoder((1 << 25) - 1))
     return Assembler::MaximumDistance::J128MB;
-  if (encoder(1 << 18 - 1))
+  if (encoder((1 << 18) - 1))
     return Assembler::MaximumDistance::J1MB;
-  assert(encoder(1 << 11 - 1) && "invalid branch");
+  assert(encoder((1 << 11) - 1) && "invalid branch");
   return Assembler::MaximumDistance::J32KB;
 }
 
@@ -285,7 +285,7 @@ void Assembler::addBranch(JumpEncoder encoder, Label target)
     unsigned jumpPos = code.size();
     auto op = encoder(4);
     code.push_back(op);
-    outOfReachList.push_back({jumpPos, targetId, move(encoder)});
+    outOfReachList.push_back({jumpPos, targetId, std::move(encoder)});
     flushDeadlineOutOfReach =
         min(flushDeadlineOutOfReach, getJumpDeadline(jumpPos, maximumDistance));
     combineDeadlines();
@@ -299,7 +299,7 @@ void Assembler::addBranch(JumpEncoder encoder, Label target)
   // Create a pending jump
   unsigned jumpPos = code.size();
   auto op = encoder(4);
-  addUndefinedLabel(move(encoder), code.size(), target, maximumDistance);
+  addUndefinedLabel(std::move(encoder), code.size(), target, maximumDistance);
   code.push_back(op);
   if (writer) [[unlikely]]
     writer->writeBranch(op, jumpPos, true);
@@ -498,17 +498,17 @@ void Assembler::addUndefinedLabel(JumpEncoder encoder, unsigned jumpPos,
   p.id = target.getId();
   p.next = labels[p.id];
   p.offset = jumpPos;
-  p.encoder = move(encoder);
+  p.encoder = std::move(encoder);
   p.maxDistance = maximumDistance;
 
   unsigned slot;
   if (nextPendingLabel) {
     slot = nextPendingLabel;
     unsigned n = pendingLabels[slot - 1].next;
-    pendingLabels[slot - 1] = move(p);
+    pendingLabels[slot - 1] = std::move(p);
     nextPendingLabel = n;
   } else {
-    pendingLabels.push_back(move(p));
+    pendingLabels.push_back(std::move(p));
     slot = pendingLabels.size();
   }
   labels[p.id] = slot << 1;

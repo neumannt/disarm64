@@ -1,5 +1,6 @@
 
 #include "disarm64.hpp"
+#include <bit>
 #include <cstdint>
 
 // Disarm — Fast AArch64 Decode/Encoder
@@ -59,18 +60,18 @@ uint32_t da_immlogical(uint64_t value, unsigned is64) {
 
 uint32_t da_immfmov32(float value) {
   // clang-format off
-  uint32_t vi = (union { uint32_t i; float f; }){.f = value}.i;
+  uint32_t vi = std::bit_cast<uint32_t>(value);
   // clang-format on
-  if (!(vi & 0x7ffff) && (uint32_t)((vi >> 25 & 0x3f) - 0x1f) <= 1)
+  if (!(vi & 0x7ffff) && uint32_t((vi >> 25 & 0x3f) - 0x1f) <= 1)
     return (vi >> 19 & 0x7f) | (vi >> 24 & 0x80);
   return 0xffffffff;
 }
 
 uint32_t da_immfmov64(double value) {
   // clang-format off
-  uint64_t vi = (union { uint64_t i; double f; }){.f = value}.i;
+  uint64_t vi = std::bit_cast<uint64_t>(value);
   // clang-format on
-  if (!(vi & 0xffffffffffff) && (uint64_t)((vi >> 54 & 0x1ff) - 0xff) <= 1)
+  if (!(vi & 0xffffffffffff) && uint64_t((vi >> 54 & 0x1ff) - 0xff) <= 1)
     return (vi >> 48 & 0x7f) | (vi >> 56 & 0x80);
   return 0xffffffff;
 }
@@ -140,10 +141,10 @@ fail:
 
 unsigned MOVconst(uint32_t* buf, GReg reg, uint64_t cnst) {
   if (cnst < 0x10000) {
-    buf[0] = MOVZx(reg, (uint16_t)cnst);
+    buf[0] = MOVZx(reg, uint16_t(cnst));
     return 1;
   } else if (cnst >= 0xffffffffffff0000) {
-    buf[0] = MOVNx(reg, (uint16_t)~cnst);
+    buf[0] = MOVNx(reg, uint16_t(~cnst));
     return 1;
   }
   int clz = __builtin_clzll(cnst) >> 4;
@@ -159,7 +160,7 @@ unsigned MOVconst(uint32_t* buf, GReg reg, uint64_t cnst) {
   } else if ((buf[0] = ORRxi(reg, DA_ZR, cnst))) {
     return 1;
   } else if (clz == 2 && (__builtin_clz(~cnst) >> 4) + ictz >= 1) { // MOVNw
-    buf[0] = MOVNw_shift(reg, (uint32_t)~cnst >> (ictz * 16), ictz);
+    buf[0] = MOVNw_shift(reg, uint32_t(~cnst) >> (ictz * 16), ictz);
     return 1;
   }
 

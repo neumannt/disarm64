@@ -49,7 +49,7 @@ static char* da_strpcatuimmhex(char* __restrict dst, uint64_t imm) {
 
 static char* da_strpcatsimmhex16(char* __restrict dst, int16_t imm,
                                  unsigned skip) {
-  uint64_t uimm = imm < 0 ? -(uint64_t)imm : (uint64_t)imm;
+  uint64_t uimm = imm < 0 ? -uint64_t(imm) : uint64_t(imm);
   if (imm < 0)
     dst = da_strpcat8(dst, &"], #-0x    "[skip], 7 - skip);
   else

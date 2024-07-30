@@ -439,11 +439,11 @@ ENC_FUNCS = {
     "cond": EncodeFunc(("Da64Cond",), ("{0}",)),
     "invcond": EncodeFunc(("Da64Cond",), ("({0}^1)",)),
     "imm": EncodeFunc(("unsigned",), ("{0}",), cond="{0}<{max}"),
-    "immadr": EncodeFunc(("uintptr_t  codeaddr", "uintptr_t  target"), ("({1}-{0})&3", "(({1}-{0})>>2)&0x7ffff"), cond="da_sext(({1}-{0}),21)==(intptr_t)({1}-{0})"),
+    "immadr": EncodeFunc(("uintptr_t  codeaddr", "uintptr_t  target"), ("({1}-{0})&3", "(({1}-{0})>>2)&0x7ffff"), cond="da_sext(({1}-{0}),21)==intptr_t({1}-{0})"),
     "immadrp": EncodeFunc(
         ("uintptr_t  codeaddr", "uintptr_t  target"),
         ("((({1}&~0xfffull)-({0}&~0xfffull))>>12)&3", "((({1}&~0xfffull)-({0}&~0xfffull))>>14)&0x7ffff"),
-        cond="da_sext(({1}&~0xfffull)-({0}&~0xfffull),33)==(intptr_t)(({1}&~0xfffull)-({0}&~0xfffull))",
+        cond="da_sext(({1}&~0xfffull)-({0}&~0xfffull),33)==intptr_t(({1}&~0xfffull)-({0}&~0xfffull))",
     ),
     "immlsl": EncodeFunc(("unsigned  lsl",), ("(-{0})&({max}-1)", "{max}-1-{0}"), cond="{0}<{max}"),
     "immbfx": EncodeFunc(("unsigned  lsb", "unsigned  width"), ("{0}", "{0}+{1}-1"), cond="{0}<{max}&&{1}-1<{max}-{0}"),

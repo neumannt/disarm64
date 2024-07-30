@@ -123,8 +123,8 @@ static constexpr auto xzr = DA_ZR;
 
 // Do not use. Sign extend lowest bits of imm.
 static inline int64_t da_sext(int64_t imm, unsigned bits) {
-  uint64_t mask = ((uint64_t)1 << bits) - 1;
-  uint64_t sign = (uint64_t)1 << (bits - 1);
+  uint64_t mask = (uint64_t(1) << bits) - 1;
+  uint64_t sign = uint64_t(1) << (bits - 1);
   return imm & sign ? ((imm & mask) ^ sign) - sign : (imm & mask);
 }
 // Do not use. Encodes arithmetic immediate.
