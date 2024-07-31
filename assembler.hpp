@@ -156,6 +156,8 @@ public:
   void* ready();
   /// Release the allocated code. Must be freed with munmap
   std::pair<void*, size_t> release();
+  /// Get the current code size
+  size_t getSize() const { return code.size() * sizeof(uint32_t); }
 
   /// Create a new label
   [[nodiscard]] Label newLabel();
