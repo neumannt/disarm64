@@ -139,6 +139,15 @@ void* Assembler::ready()
   return executableCode;
 }
 
+void* Assembler::resolveLabel(Label label)
+// Get the address of a label (after calling ready)
+{
+  auto info = labels[label.getId()];
+  if ((!executableCode) || (!(info & 1)))
+    return nullptr;
+  return executableCode + ((info >> 1) * sizeof(uint32_t));
+}
+
 pair<void*, size_t> Assembler::release()
 // Release the allocated code. Must be freed with munmap
 {

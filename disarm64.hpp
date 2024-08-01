@@ -115,9 +115,10 @@ static constexpr auto x0 = DA_GP(0), x1 = DA_GP(1), x2 = DA_GP(2),
                       x12 = DA_GP(12), x13 = DA_GP(13), x14 = DA_GP(14),
                       x15 = DA_GP(15), x16 = DA_GP(16), x17 = DA_GP(17),
                       x18 = DA_GP(18), x19 = DA_GP(19), x20 = DA_GP(20),
-                      x21 = DA_GP(21), x22 = DA_GP(22), x23 = DA_GP(24),
-                      x25 = DA_GP(25), x26 = DA_GP(26), x27 = DA_GP(27),
-                      x28 = DA_GP(28), x29 = DA_GP(29), x30 = DA_GP(30);
+                      x21 = DA_GP(21), x22 = DA_GP(22), x23 = DA_GP(23),
+                      x24 = DA_GP(24), x25 = DA_GP(25), x26 = DA_GP(26),
+                      x27 = DA_GP(27), x28 = DA_GP(28), x29 = DA_GP(29),
+                      x30 = DA_GP(30);
 static constexpr auto sp = DA_SP;
 static constexpr auto xzr = DA_ZR;
 
