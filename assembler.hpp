@@ -33,8 +33,14 @@ public:
 /// Helper class for collecting assembler output
 class AssemblerWriter {
 public:
+  // Workaround for incomplete C++23 support
+#ifdef __cpp_lib_move_only_function
   /// The writer callback
   using Callback = std::move_only_function<void(std::string_view)>;
+#else
+  /// The writer callback
+  using Callback = std::function<void(std::string_view)>;
+#endif
 
 private:
   /// The target
@@ -59,8 +65,14 @@ public:
 /// High level interface for generating assembler code
 class Assembler {
 public:
+// Workaround for incomplete C++23 support
+#ifdef __cpp_lib_move_only_function
   /// Encoding logic for jumps
   using JumpEncoder = std::move_only_function<uint32_t(int32_t)>;
+#else
+  /// Encoding logic for jumps
+  using JumpEncoder = std::function<uint32_t(int32_t)>;
+#endif
   /// Maximum distance of a branch
   enum class MaximumDistance { J32KB, J1MB, J128MB };
   /// A patchable position
