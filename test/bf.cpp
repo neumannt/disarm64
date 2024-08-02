@@ -118,7 +118,7 @@ int main(int argc, char* argv[]) {
     return 1;
   }
   disarm64::Assembler assembler;
-  disarm64::AssemblerWriter writer([&out](const char* str, unsigned len) { out << string_view(str, len); });
+  disarm64::AssemblerWriter writer([&out](string_view str) { out << str; });
   if (doDump) assembler.setWriter(&writer);
 
   ifstream in(args[0]);

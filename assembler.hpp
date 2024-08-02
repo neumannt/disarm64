@@ -7,6 +7,7 @@
 #include <cstdint>
 #include <functional>
 #include <span>
+#include <string_view>
 #include <vector>
 
 namespace disarm64 {
@@ -33,7 +34,7 @@ public:
 class AssemblerWriter {
 public:
   /// The writer callback
-  using Callback = std::move_only_function<void(const char*, uintptr_t)>;
+  using Callback = std::move_only_function<void(std::string_view)>;
 
 private:
   /// The target
@@ -52,7 +53,7 @@ public:
   /// Write a branch instruction
   void writeBranch(uint32_t op, uint32_t label, bool proxy);
   /// Write a raw string
-  void writeRaw(const char* str, uintptr_t len) { callback(str, len); }
+  void writeRaw(std::string_view str) { callback(str); }
 };
 
 /// High level interface for generating assembler code

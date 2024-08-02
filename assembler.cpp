@@ -51,7 +51,7 @@ void AssemblerWriter::writeLabel(uint32_t label, bool proxy)
   auto writer = writeLabelRaw(buffer, label, proxy);
   *(writer++) = ':';
   *(writer++) = '\n';
-  callback(buffer, writer - buffer);
+  callback(string_view(buffer, writer - buffer));
 }
 
 void AssemblerWriter::writeOp(uint32_t op)
@@ -63,7 +63,7 @@ void AssemblerWriter::writeOp(uint32_t op)
   disarm64::da64_format(&ddi, buffer);
   char* writer = buffer + strlen(buffer);
   *(writer++) = '\n';
-  callback(buffer, writer - buffer);
+  callback(string_view(buffer, writer - buffer));
 };
 
 void AssemblerWriter::writeBranch(uint32_t op, uint32_t label, bool proxy)
@@ -78,7 +78,7 @@ void AssemblerWriter::writeBranch(uint32_t op, uint32_t label, bool proxy)
     --writer;
   writer = writeLabelRaw(writer, label, proxy);
   *(writer++) = '\n';
-  callback(buffer, writer - buffer);
+  callback(string_view(buffer, writer - buffer));
 }
 
 Assembler::Assembler()
@@ -344,7 +344,7 @@ void Assembler::emitJumpTable(Label start, std::span<Label> table)
       char buffer[128];
       snprintf(buffer, sizeof(buffer), ".word (.L%u-.L%u)>>2\n",
                unsigned(targetId), unsigned(start.getId()));
-      writer->writeRaw(buffer, strlen(buffer));
+      writer->writeRaw(buffer);
     }
     ++shift;
   }
@@ -552,10 +552,10 @@ Assembler::PatchablePosition Assembler::patchableMovConst32(GReg reg)
     char buffer[128];
     snprintf(buffer, sizeof(buffer), "mov w%u, const%ulow\n", unsigned(reg.val),
              unsigned(result.pos));
-    writer->writeRaw(buffer, strlen(buffer));
+    writer->writeRaw(buffer);
     snprintf(buffer, sizeof(buffer), "movk w%u, const%uhigh, lsl #16\n",
              unsigned(reg.val), unsigned(result.pos));
-    writer->writeRaw(buffer, strlen(buffer));
+    writer->writeRaw(buffer);
   }
   return result;
 }
@@ -570,10 +570,10 @@ void Assembler::patchMovConst32(PatchablePosition pos, uint32_t value)
     char buffer[128];
     snprintf(buffer, sizeof(buffer), "const%ulow=%u\n", unsigned(pos.pos),
              unsigned(value & 0xFFFF));
-    writer->writeRaw(buffer, strlen(buffer));
+    writer->writeRaw(buffer);
     snprintf(buffer, sizeof(buffer), "const%uhigh=%u\n", unsigned(pos.pos),
              unsigned(value >> 16));
-    writer->writeRaw(buffer, strlen(buffer));
+    writer->writeRaw(buffer);
   }
 }
 
