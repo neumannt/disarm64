@@ -78,7 +78,7 @@ static char* da_strpcatreggpsp(char* __restrict dst, unsigned sf,
   const char* xstr = "x0\0 x1\0 x2\0 x3\0 x4\0 x5\0 x6\0 x7\0 "
                      "x8\0 x9\0 x10\0x11\0x12\0x13\0x14\0x15\0"
                      "x16\0x17\0x18\0x19\0x20\0x21\0x22\0x23\0"
-                     "x24\0x25\0x26\0x27\0x28\0x29\0x30\0sp";
+                     "x24\0x25\0x26\0x27\0x28\0x29\0x30\0sp\0";
   unsigned len = idx >= 10 && !(idx == 31 && sf) ? 3 : 2;
   return da_strpcat4(dst, (sf ? xstr : wstr) + idx * 4, len);
 }
