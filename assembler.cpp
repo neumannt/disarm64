@@ -336,7 +336,7 @@ void Assembler::emitJumpTable(Label start, std::span<Label> table)
       int32_t delta = getJumpDelta(tableStart, labels[targetId] >> 1);
       code.push_back(delta);
     } else {
-      addUndefinedLabel([shift](int32_t delta) { return delta - shift; },
+      addUndefinedLabel([shift](int32_t delta) { return delta + shift; },
                         code.size(), target, MaximumDistance::J128MB);
       code.push_back(0);
     }
