@@ -1,6 +1,6 @@
 
-#include "../disarm64.hpp"
-#include "../assembler.hpp"
+#include "disarm64.hpp"
+#include "assembler.hpp"
 #include <iostream>
 #include <fstream>
 #include <vector>
