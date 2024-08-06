@@ -266,12 +266,6 @@ void Assembler::placeLabel(Label label)
       assert(op);
       code[p.offset] = op;
       code[p.offset + 1] = ADDxi(target, target, targetAddress & lower12Bits);
-      if (writer) [[unlikely]] {
-        char buffer[128];
-        snprintf(buffer, sizeof(buffer), "const%u=%u\n", unsigned(p.offset),
-                 unsigned(targetAddress & lower12Bits));
-        writer->writeRaw(buffer);
-      }
       break;
     }
     }
@@ -630,8 +624,8 @@ void Assembler::adr(GReg reg, Label label, bool maxDistance1MB)
     if (writer) [[unlikely]] {
       writer->writeBranch(op, label.getId(), false);
       char buffer[128];
-      snprintf(buffer, sizeof(buffer), "add x%u, x%u, const%u\n",
-               unsigned(reg.val), unsigned(reg.val), instPos);
+      snprintf(buffer, sizeof(buffer), "add x%u, x%u, :lo12:.L%u\n",
+               unsigned(reg.val), unsigned(reg.val), unsigned(label.getId()));
       writer->writeRaw(buffer);
     }
     cat = PendingLabelCategory::AdrFar;
