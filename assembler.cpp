@@ -224,26 +224,57 @@ void Assembler::placeLabel(Label label)
     ssize_t disp = ssize_t(ofs - p.offset);
     auto op = p.encoder(disp);
 
-    // Remove from pending queue
-    unsigned jc = unsigned(p.maxDistance);
-    if (p.prevInClass) {
-      pendingLabels[p.prevInClass - 1].nextInClass = p.nextInClass;
-    } else {
-      pendingLabelQueue[jc].first = p.nextInClass;
-      needsUpdate = true;
-    }
-    if (p.nextInClass) {
-      pendingLabels[p.nextInClass - 1].prevInClass = p.prevInClass;
-    } else {
-      pendingLabelQueue[jc].last = p.prevInClass;
-    }
+    switch (p.category) {
+    case PendingLabelCategory::Encoder: {
+      // Remove from pending queue
+      unsigned jc = unsigned(p.maxDistance);
+      if (p.prevInClass) {
+        pendingLabels[p.prevInClass - 1].nextInClass = p.nextInClass;
+      } else {
+        pendingLabelQueue[jc].first = p.nextInClass;
+        needsUpdate = true;
+      }
+      if (p.nextInClass) {
+        pendingLabels[p.nextInClass - 1].prevInClass = p.prevInClass;
+      } else {
+        pendingLabelQueue[jc].last = p.prevInClass;
+      }
 
-    // The target must be in range, otherwise we would have flushed the jump
-    // already
-    assert(op);
-    if (writer) [[unlikely]]
-      writer->writeLabel(p.offset, true);
-    code[p.offset] = op;
+      // The target must be in range, otherwise we would have flushed the jump
+      // already
+      assert(op);
+      if (writer) [[unlikely]]
+        writer->writeLabel(p.offset, true);
+      code[p.offset] = op;
+      break;
+    }
+    case PendingLabelCategory::AdrNear: {
+      GReg target(op);
+      disp *= 4;
+      op = ADR(target, 0, disp);
+      assert(op);
+      code[p.offset] = op;
+      break;
+    }
+    case PendingLabelCategory::AdrFar: {
+      static constexpr uint64_t lower12Bits = (1 << 12) - 1;
+      static constexpr uint64_t upperBits = ~lower12Bits;
+      GReg target(op);
+      uint64_t sourceAddress = p.offset * 4ull;
+      uint64_t targetAddress = ofs * 4ull;
+      op = ADRP(target, sourceAddress & upperBits, targetAddress & upperBits);
+      assert(op);
+      code[p.offset] = op;
+      code[p.offset + 1] = ADDxi(target, target, targetAddress & lower12Bits);
+      if (writer) [[unlikely]] {
+        char buffer[128];
+        snprintf(buffer, sizeof(buffer), "const%u=%u\n", unsigned(p.offset),
+                 unsigned(targetAddress & lower12Bits));
+        writer->writeRaw(buffer);
+      }
+      break;
+    }
+    }
 
     auto n = p.next >> 1;
     p.next = nextPendingLabel;
@@ -308,7 +339,9 @@ void Assembler::addBranch(JumpEncoder encoder, Label target)
   // Create a pending jump
   unsigned jumpPos = code.size();
   auto op = encoder(4);
-  addUndefinedLabel(std::move(encoder), code.size(), target, maximumDistance);
+  PendingLabelCategory cat = PendingLabelCategory::Encoder;
+  addUndefinedLabel(std::move(encoder), code.size(), target, cat,
+                    maximumDistance);
   code.push_back(op);
   if (writer) [[unlikely]]
     writer->writeBranch(op, jumpPos, true);
@@ -337,7 +370,8 @@ void Assembler::emitJumpTable(Label start, std::span<Label> table)
       code.push_back(delta);
     } else {
       addUndefinedLabel([shift](int32_t delta) { return delta + shift; },
-                        code.size(), target, MaximumDistance::J128MB);
+                        code.size(), target, PendingLabelCategory::Encoder,
+                        MaximumDistance::J128MB);
       code.push_back(0);
     }
     if (writer) [[unlikely]] {
@@ -498,10 +532,13 @@ void Assembler::flushJumpThunks(bool afterUnconditionalBranch,
 }
 
 void Assembler::addUndefinedLabel(JumpEncoder encoder, unsigned jumpPos,
-                                  Label target, MaximumDistance maximumDistance)
+                                  Label target, PendingLabelCategory cat,
+                                  MaximumDistance maximumDistance)
 // Create an undefined label
 {
-  auto maxDistance = identifyMaximumDistance(encoder);
+  auto maxDistance = (cat == PendingLabelCategory::Encoder)
+                         ? identifyMaximumDistance(encoder)
+                         : MaximumDistance::J128MB;
 
   PendingLabel p;
   p.id = target.getId();
@@ -509,6 +546,7 @@ void Assembler::addUndefinedLabel(JumpEncoder encoder, unsigned jumpPos,
   p.offset = jumpPos;
   p.encoder = std::move(encoder);
   p.maxDistance = maximumDistance;
+  p.category = cat;
 
   unsigned slot;
   if (nextPendingLabel) {
@@ -522,7 +560,9 @@ void Assembler::addUndefinedLabel(JumpEncoder encoder, unsigned jumpPos,
   }
   labels[p.id] = slot << 1;
 
-  // Update deadlines
+  // Update deadlines if encoders are used
+  if (cat != PendingLabelCategory::Encoder)
+    return;
   unsigned gapClass = unsigned(maxDistance);
   if (pendingLabelQueue[gapClass].first) {
     pendingLabels[slot - 1].prevInClass = pendingLabelQueue[gapClass].last;
@@ -540,6 +580,64 @@ void Assembler::movConst(GReg reg, uint64_t val)
   unsigned len = MOVconst(buffer, reg, val);
   for (unsigned index = 0; index != len; ++index)
     add(buffer[index]);
+}
+
+void Assembler::adr(GReg reg, Label label, bool maxDistance1MB)
+// Load the address of a label into a register
+{
+  // Defend against two instruction encodings
+  flushJumpThunks(false, 2);
+
+  // Do we know the target already?
+  static constexpr uint64_t lower12Bits = (1 << 12) - 1;
+  static constexpr uint64_t upperBits = ~lower12Bits;
+  unsigned targetId = label.getId();
+  if (labels[targetId] & 1) {
+    int64_t targetAddress = (labels[targetId] >> 1) * 4;
+    int64_t sourceAddress = code.size() * 4;
+    int64_t delta = targetAddress - sourceAddress;
+    if (auto op = ADR(reg, 0, delta)) {
+      code.push_back(op);
+      if (writer) [[unlikely]]
+        writer->writeBranch(op, label.getId(), false);
+    } else {
+      op = ADRP(reg, sourceAddress & upperBits, targetAddress & upperBits);
+      auto op2 = ADDxi(reg, reg, targetAddress & lower12Bits);
+      code.push_back(op);
+      code.push_back(op2);
+      if (writer) [[unlikely]] {
+        writer->writeBranch(op, label.getId(), false);
+        writer->writeOp(op2);
+      }
+    }
+    return;
+  }
+
+  // Create a pending label
+  unsigned instPos = code.size();
+  PendingLabelCategory cat;
+  if (maxDistance1MB) {
+    auto op = ADR(reg, 0, 0);
+    code.push_back(op);
+    if (writer) [[unlikely]]
+      writer->writeBranch(op, label.getId(), false);
+    cat = PendingLabelCategory::AdrNear;
+  } else {
+    auto op = ADRP(reg, 0, 0);
+    auto op2 = ADDxi(reg, reg, 0);
+    code.push_back(op);
+    code.push_back(op2);
+    if (writer) [[unlikely]] {
+      writer->writeBranch(op, label.getId(), false);
+      char buffer[128];
+      snprintf(buffer, sizeof(buffer), "add x%u, x%u, const%u\n",
+               unsigned(reg.val), unsigned(reg.val), instPos);
+      writer->writeRaw(buffer);
+    }
+    cat = PendingLabelCategory::AdrFar;
+  }
+  addUndefinedLabel([reg](int32_t) { return reg.val; }, instPos, label, cat,
+                    MaximumDistance::J128MB);
 }
 
 Assembler::PatchablePosition Assembler::patchableMovConst32(GReg reg)

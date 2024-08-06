@@ -74,7 +74,7 @@ public:
   using JumpEncoder = std::function<uint32_t(int32_t)>;
 #endif
   /// Maximum distance of a branch
-  enum class MaximumDistance { J32KB, J1MB, J128MB };
+  enum class MaximumDistance : uint8_t { J32KB, J1MB, J128MB };
   /// A patchable position
   class PatchablePosition {
     size_t pos;
@@ -96,6 +96,8 @@ private:
   std::byte *executableCode = nullptr, *executableCodeLimit = nullptr;
   /// All labels
   std::vector<uintptr_t> labels;
+  /// The different types of pending labels
+  enum class PendingLabelCategory : uint8_t { Encoder, AdrNear, AdrFar };
   /// A pending label position
   struct PendingLabel {
     /// The next pending label
@@ -110,6 +112,8 @@ private:
     unsigned prevInClass = 0, nextInClass = 0;
     /// The maximum distance class
     MaximumDistance maxDistance;
+    /// The category of pending label
+    PendingLabelCategory category;
 
     /// Compute the deadline for placing this branch
     inline size_t getDeadline() const;
@@ -153,6 +157,7 @@ private:
                        size_t pendingBlockSize = 0);
   /// Add an undefined label
   void addUndefinedLabel(JumpEncoder encoder, unsigned jumpPos, Label target,
+                         PendingLabelCategory cat,
                          MaximumDistance maximumDistance);
 
 public:
@@ -187,6 +192,8 @@ public:
   void emitJumpTable(Label start, std::span<Label> table);
   /// Move a constant into a register
   void movConst(GReg reg, uint64_t val);
+  /// Load the address of a label into a register
+  void adr(GReg reg, Label label, bool maxDistance1MB = false);
 
   /// Move a constant into a register in a way that can be changed later.
   /// This is intended for sp adjustment in the function prologue.
