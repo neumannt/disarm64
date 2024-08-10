@@ -378,6 +378,55 @@ void Assembler::emitJumpTable(Label start, std::span<Label> table)
   }
 }
 
+void Assembler::embed(Label start, const void* data, unsigned len,
+                      unsigned alignment)
+// Embed data inside the generated code
+{
+  // Check alignment constraints
+  if (alignment & (alignment - 1))
+    alignment = 1;
+  if (alignment < 4)
+    alignment = 4;
+  if (alignment > 256)
+    alignment = 256;
+  alignment /= 4;
+
+  // Make sure all labels work
+  flushJumpThunks(false, (len + 3) / 4 + alignment);
+
+  // Align the data
+  while (code.size() & (alignment - 1)) {
+    add(NOP());
+  }
+
+  // Place the label
+  placeLabel(start);
+
+  // Write the data words
+  while (len >= 4) {
+    uint32_t word;
+    __builtin_memcpy(&word, data, 4);
+    code.push_back(word);
+    if (writer) [[unlikely]] {
+      char buffer[128];
+      snprintf(buffer, sizeof(buffer), ".word %u\n", unsigned(word));
+      writer->writeRaw(buffer);
+    }
+    data = static_cast<const char*>(data) + 4;
+    len -= 4;
+  }
+  if (len > 0) {
+    uint32_t word = 0;
+    __builtin_memcpy(&word, data, len);
+    code.push_back(word);
+    if (writer) [[unlikely]] {
+      char buffer[128];
+      snprintf(buffer, sizeof(buffer), ".word %u\n", unsigned(word));
+      writer->writeRaw(buffer);
+    }
+  }
+}
+
 void Assembler::recomputeDeadlines()
 // Recompute deadlines after a queue head has changed
 {

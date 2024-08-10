@@ -26,6 +26,9 @@ class Label {
   friend class Assembler;
 
 public:
+  /// Constructor
+  constexpr Label() : id(0) {}
+
   /// Get the id
   unsigned getId() const { return id; }
 };
@@ -168,6 +171,8 @@ public:
 
   /// Install an assembler writer
   void setWriter(AssemblerWriter* out) { writer = out; }
+  /// Get the assembler writer (if any)
+  AssemblerWriter* getWriter() const { return writer; }
   /// Dump generated code (for debugging)
   void dump();
   /// Prepare for execution
@@ -190,6 +195,9 @@ public:
   void addBranch(JumpEncoder encoder, Label target);
   /// Create a jump table
   void emitJumpTable(Label start, std::span<Label> table);
+  /// Embed data inside the generated code
+  void embed(Label start, const void* data, unsigned len,
+             unsigned alignment = 0);
   /// Move a constant into a register
   void movConst(GReg reg, uint64_t val);
   /// Load the address of a label into a register
