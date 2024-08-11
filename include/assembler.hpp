@@ -178,7 +178,9 @@ public:
   /// Prepare for execution
   void* ready();
   /// Get the address of a label (after calling ready)
-  void* resolveLabel(Label label);
+  void* resolveLabel(Label label) const;
+  /// Get offset of a label (after placing it)
+  size_t getLabelOffset(Label label) const;
   /// Release the allocated code. Must be freed with munmap
   std::pair<void*, size_t> release();
   /// Get the current code size
