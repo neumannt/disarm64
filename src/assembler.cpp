@@ -51,7 +51,7 @@ void AssemblerWriter::writeLabel(uint32_t label, bool proxy)
   auto writer = writeLabelRaw(buffer, label, proxy);
   *(writer++) = ':';
   *(writer++) = '\n';
-  callback(string_view(buffer, writer - buffer));
+  writeRaw(string_view(buffer, writer - buffer));
 }
 
 void AssemblerWriter::writeOp(uint32_t op)
@@ -63,7 +63,7 @@ void AssemblerWriter::writeOp(uint32_t op)
   disarm64::da64_format(&ddi, buffer);
   char* writer = buffer + strlen(buffer);
   *(writer++) = '\n';
-  callback(string_view(buffer, writer - buffer));
+  writeRaw(string_view(buffer, writer - buffer));
 };
 
 void AssemblerWriter::writeBranch(uint32_t op, uint32_t label, bool proxy)
@@ -78,7 +78,16 @@ void AssemblerWriter::writeBranch(uint32_t op, uint32_t label, bool proxy)
     --writer;
   writer = writeLabelRaw(writer, label, proxy);
   *(writer++) = '\n';
-  callback(string_view(buffer, writer - buffer));
+  writeRaw(string_view(buffer, writer - buffer));
+}
+
+void AssemblerWriter::writeRaw(string_view str)
+// Write a raw string
+{
+  if (delayedCode.empty())
+    callback(str);
+  else
+    delayedCode.back().code.append(str);
 }
 
 Assembler::Assembler()
@@ -148,7 +157,7 @@ void* Assembler::resolveLabel(Label label) const
   return executableCode + ((info >> 1) * sizeof(uint32_t));
 }
 
-size_t Assembler::getLabelOffset(Label label)  const
+size_t Assembler::getLabelOffset(Label label) const
 // Get the offset of a label (after calling ready)
 {
   auto info = labels[label.getId()];
@@ -698,13 +707,7 @@ Assembler::PatchablePosition Assembler::patchableMovConst32(GReg reg)
   code.push_back(MOVZw(reg, 0x5678));
   code.push_back(MOVKw_shift(reg, 0x1234, 1));
   if (writer) [[unlikely]] {
-    char buffer[128];
-    snprintf(buffer, sizeof(buffer), "mov w%u, const%ulow\n", unsigned(reg.val),
-             unsigned(result.pos));
-    writer->writeRaw(buffer);
-    snprintf(buffer, sizeof(buffer), "movk w%u, const%uhigh, lsl #16\n",
-             unsigned(reg.val), unsigned(result.pos));
-    writer->writeRaw(buffer);
+    writer->delayedCode.emplace_back(result.pos, string());
   }
   return result;
 }
@@ -717,12 +720,26 @@ void Assembler::patchMovConst32(PatchablePosition pos, uint32_t value)
   code[pos.pos + 1] = MOVKw_shift(reg, value >> 16, 1);
   if (writer) [[unlikely]] {
     char buffer[128];
-    snprintf(buffer, sizeof(buffer), "const%ulow=%u\n", unsigned(pos.pos),
-             unsigned(value & 0xFFFF));
-    writer->writeRaw(buffer);
-    snprintf(buffer, sizeof(buffer), "const%uhigh=%u\n", unsigned(pos.pos),
+    snprintf(buffer, sizeof(buffer), "mov w%u, %u\nmovk w%u, %u, lsl #16\n",
+             unsigned(reg.val), unsigned(value & 0xFFFF), unsigned(reg.val),
              unsigned(value >> 16));
-    writer->writeRaw(buffer);
+    string_view patchedCode = buffer;
+    for (unsigned index = 0, limit = writer->delayedCode.size(); index != limit;
+         ++index) {
+      auto& dc = writer->delayedCode[index];
+      if (dc.pos == pos.pos) {
+        if (!index) {
+          writer->callback(patchedCode);
+          writer->callback(dc.code);
+        } else {
+          auto& pc = writer->delayedCode[index - 1];
+          pc.code.append(patchedCode);
+          pc.code.append(dc.code);
+        }
+        writer->delayedCode.erase(writer->delayedCode.begin() + index);
+        break;
+      }
+    }
   }
 }
 

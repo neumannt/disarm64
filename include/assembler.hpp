@@ -7,6 +7,7 @@
 #include <cstdint>
 #include <functional>
 #include <span>
+#include <string>
 #include <string_view>
 #include <vector>
 
@@ -46,8 +47,19 @@ public:
 #endif
 
 private:
+  /// Delayed code due to patchable moves
+  struct DelayedCode {
+    /// The position
+    size_t pos;
+    /// The current code
+    std::string code;
+  };
   /// The target
   Callback callback;
+  /// Delayed code due to patchable moves
+  std::vector<DelayedCode> delayedCode;
+
+  friend class Assembler;
 
 public:
   /// Constructor
@@ -62,7 +74,7 @@ public:
   /// Write a branch instruction
   void writeBranch(uint32_t op, uint32_t label, bool proxy);
   /// Write a raw string
-  void writeRaw(std::string_view str) { callback(str); }
+  void writeRaw(std::string_view str);
 };
 
 /// High level interface for generating assembler code
