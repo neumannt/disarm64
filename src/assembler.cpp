@@ -168,8 +168,10 @@ size_t Assembler::getLabelOffset(Label label) const
 pair<void*, size_t> Assembler::release()
 // Release the allocated code. Must be freed with munmap
 {
-  return pair<void*, size_t>(executableCode,
+  pair<void*, size_t> result(executableCode,
                              executableCodeLimit - executableCode);
+  executableCode = executableCodeLimit = nullptr;
+  return result;
 }
 
 static inline int32_t getJumpDelta(int64_t source, int64_t target)
