@@ -24,11 +24,18 @@ AssemblerWriter::~AssemblerWriter()
 // Destructor
 {}
 
+#ifndef __APPLE__
+static constexpr char labelPrefix[] = ".L";
+#else
+static constexpr char labelPrefix[] = "L";
+#endif
+
 static char* writeLabelRaw(char* writer, uint32_t label, bool proxy)
 // Helper for emitting labels
 {
-  *(writer++) = '.';
-  *(writer++) = 'L';
+  for (char c : labelPrefix)
+    if (c)
+      *(writer++) = c;
   if (proxy)
     *(writer++) = 'L';
   if (!label) {
@@ -389,8 +396,8 @@ void Assembler::emitJumpTable(Label start, std::span<Label> table)
     }
     if (writer) [[unlikely]] {
       char buffer[128];
-      snprintf(buffer, sizeof(buffer), ".word (.L%u-.L%u)>>2\n",
-               unsigned(targetId), unsigned(start.getId()));
+      snprintf(buffer, sizeof(buffer), ".word (%s%u-%s%u)>>2\n", labelPrefix,
+               unsigned(targetId), labelPrefix, unsigned(start.getId()));
       writer->writeRaw(buffer);
     }
     ++shift;
@@ -692,8 +699,9 @@ void Assembler::adr(GReg reg, Label label, bool maxDistance1MB)
     if (writer) [[unlikely]] {
       writer->writeBranch(op, label.getId(), false);
       char buffer[128];
-      snprintf(buffer, sizeof(buffer), "add x%u, x%u, :lo12:.L%u\n",
-               unsigned(reg.val), unsigned(reg.val), unsigned(label.getId()));
+      snprintf(buffer, sizeof(buffer), "add x%u, x%u, :lo12:%s%u\n",
+               unsigned(reg.val), unsigned(reg.val), labelPrefix,
+               unsigned(label.getId()));
       writer->writeRaw(buffer);
     }
     cat = PendingLabelCategory::AdrFar;
