@@ -710,6 +710,24 @@ void Assembler::adr(GReg reg, Label label, bool maxDistance1MB)
                     MaximumDistance::J128MB);
 }
 
+void Assembler::b(Label target)
+// Unconditional branch
+{
+  addBranch([](int32_t delta) { return B(delta); }, target);
+}
+
+void Assembler::bcond(Da64Cond cond, Label target)
+// Conditional branch
+{
+  addBranch([cond](int32_t delta) { return BCOND(cond, delta); }, target);
+}
+
+void Assembler::bl(Label target)
+// Function call
+{
+  addBranch([](int32_t delta) { return BL(delta); }, target);
+}
+
 Assembler::PatchablePosition Assembler::patchableMovConst32(GReg reg)
 // Move a constant into a register in a way that can be changed later.
 {

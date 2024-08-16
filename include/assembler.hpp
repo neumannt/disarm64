@@ -15,6 +15,7 @@ namespace disarm64 {
 
 struct GReg;
 class Assembler;
+enum Da64Cond : uint8_t;
 
 /// A label for jumps
 class Label {
@@ -216,6 +217,13 @@ public:
   void movConst(GReg reg, uint64_t val);
   /// Load the address of a label into a register
   void adr(GReg reg, Label label, bool maxDistance1MB = false);
+
+  /// Unconditional branch
+  void b(Label target);
+  /// Conditional branch
+  void bcond(Da64Cond cond, Label target);
+  /// Function call
+  void bl(Label target);
 
   /// Move a constant into a register in a way that can be changed later.
   /// This is intended for sp adjustment in the function prologue.

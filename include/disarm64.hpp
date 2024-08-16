@@ -10,7 +10,7 @@
 
 namespace disarm64 {
 
-enum Da64Cond {
+enum Da64Cond : uint8_t {
   /// Equals, zero set (Z=1)
   DA_EQ = 0x0,
   /// Not equals, zero clear (Z=0)
