@@ -147,30 +147,43 @@ unsigned MOVconst(uint32_t* buf, GReg reg, uint64_t cnst) {
     buf[0] = MOVNx(reg, uint16_t(~cnst));
     return 1;
   }
+  uint64_t icnst = ~cnst;
   int clz = __builtin_clzll(cnst) >> 4;
-  int iclz = __builtin_clzll(~cnst) >> 4;
+  int iclz = __builtin_clzll(icnst) >> 4;
   int ctz = __builtin_ctzll(cnst) >> 4;
-  int ictz = __builtin_ctzll(~cnst) >> 4;
+  int ictz = __builtin_ctzll(icnst) >> 4;
   if (clz + ctz == 3) { // Simple MOVZ shifted by ctz
     buf[0] = MOVZx_shift(reg, cnst >> (ctz * 16), ctz);
     return 1;
   } else if (iclz + ictz == 3) { // Simple MOVN shifted by ictz
-    buf[0] = MOVNx_shift(reg, ~cnst >> (ictz * 16), ictz);
+    buf[0] = MOVNx_shift(reg, icnst >> (ictz * 16), ictz);
     return 1;
   } else if ((buf[0] = ORRxi(reg, DA_ZR, cnst))) {
     return 1;
-  } else if (clz == 2 && (__builtin_clz(~cnst) >> 4) + ictz >= 1) { // MOVNw
+  } else if (clz == 2 && (__builtin_clz(icnst) >> 4) + ictz >= 1) { // MOVNw
     buf[0] = MOVNw_shift(reg, uint32_t(~cnst) >> (ictz * 16), ictz);
     return 1;
   }
 
-  // XXX: maybe add two-instruction sequences, e.g. to ORRs or MOVZ+ORR?
-  // XXX: try inversion to reduce number of instructions
-  buf[0] = MOVZx_shift(reg, cnst >> (16 * ctz) & 0xffff, ctz);
+  unsigned countZ = 0, countI = 0;
+  for (unsigned i = ctz + 1; i < 4; i++)
+    countZ += ((cnst >> 16 * i) & 0xffff) != 0;
+  for (unsigned i = ictz + 1; i < 4; i++)
+    countI += ((icnst >> 16 * i) & 0xffff) != 0;
+
   unsigned cnt = 1;
-  for (unsigned i = ctz + 1; i < 4; i++) {
-    if (cnst >> 16 * i & 0xffff)
-      buf[cnt++] = MOVKx_shift(reg, cnst >> 16 * i & 0xffff, i);
+  if (countZ <= countI) {
+    buf[0] = MOVZx_shift(reg, cnst >> (16 * ctz) & 0xffff, ctz);
+    for (unsigned i = ctz + 1; i < 4; i++) {
+      if (cnst >> 16 * i & 0xffff)
+        buf[cnt++] = MOVKx_shift(reg, cnst >> 16 * i & 0xffff, i);
+    }
+  } else {
+    buf[0] = MOVNx_shift(reg, ((icnst) >> (16 * ictz)) & 0xffff, ictz);
+    for (unsigned i = ictz + 1; i < 4; i++) {
+      if (icnst >> 16 * i & 0xffff)
+        buf[cnt++] = MOVKx_shift(reg, cnst >> 16 * i & 0xffff, i);
+    }
   }
   return cnt;
 }
