@@ -697,11 +697,22 @@ void Assembler::adr(GReg reg, Label label, bool maxDistance1MB)
     code.push_back(op);
     code.push_back(op2);
     if (writer) [[unlikely]] {
-      writer->writeBranch(op, label.getId(), false);
       char buffer[128];
+#ifndef __APPLE__
+      // ELF syntax
+      writer->writeBranch(op, label.getId(), false);
       snprintf(buffer, sizeof(buffer), "add x%u, x%u, :lo12:%s%u\n",
                unsigned(reg.val), unsigned(reg.val), labelPrefix,
                unsigned(label.getId()));
+#else
+      // MachO syntax
+      snprintf(buffer, sizeof(buffer), "adrp x%u, %s%u@PAGE\n",
+               unsigned(reg.val), labelPrefix, unsigned(label.getId()));
+      writer->writeRaw(buffer);
+      snprintf(buffer, sizeof(buffer), "add x%u, x%u, %s%u@PAGEOFF\n",
+               unsigned(reg.val), unsigned(reg.val), labelPrefix,
+               unsigned(label.getId()));
+#endif
       writer->writeRaw(buffer);
     }
     cat = PendingLabelCategory::AdrFar;
