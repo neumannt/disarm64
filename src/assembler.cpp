@@ -636,6 +636,7 @@ void Assembler::addUndefinedLabel(JumpEncoder encoder, unsigned jumpPos,
   if (pendingLabelQueue[gapClass].first) {
     pendingLabels[slot - 1].prevInClass = pendingLabelQueue[gapClass].last;
     pendingLabels[pendingLabelQueue[gapClass].last - 1].nextInClass = slot;
+    pendingLabelQueue[gapClass].last = slot;
   } else {
     pendingLabelQueue[gapClass].first = pendingLabelQueue[gapClass].last = slot;
     recomputeDeadlines();
